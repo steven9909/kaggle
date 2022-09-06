@@ -9,4 +9,5 @@ kaggle==1.5.12
 pytorch-lightning==1.7.4
 pytube==12.1.0
 transformers==4.21.2
+Pillow==9.2.0
 ```
