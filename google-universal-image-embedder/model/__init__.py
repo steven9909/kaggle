@@ -2,26 +2,24 @@ import pytorch_lightning as pl
 from PIL import Image
 from PIL.Image import Image as PILImage
 from torch import Tensor, nn
-from transformers import ViTFeatureExtractor, ViTModel
-<<<<<<< HEAD
+from transformers import ViTFeatureExtractor, ViTModel, ViTConfig
 from dataset import _VideoDataset
 import torchvision.transforms.functional as TF
-=======
->>>>>>> b13ba909a0353657afa8c0751e8847cfaadc180d
+from torch.utils.data import DataLoader
 
 
 class Encoder(nn.Module):
     def __init__(self):
-
         super().__init__()
-        self.feature_extractor = ViTFeatureExtractor.from_pretrained(pretrained)
-        self.model = ViTModel.from_pretrained(pretrained)
 
-    def forward(self, image: PILImage) -> Tensor:
+        configuration = ViTConfig(
+            hidden_size=64, intermediate_size=256, num_attention_heads=8
+        )
+        self.model = ViTModel(configuration)
 
-        return self.model(**self.feature_extractor(image, return_tensors="pt"))[
-            "last_hidden_state"
-        ]
+    def forward(self, image: Tensor) -> Tensor:
+
+        return self.model(image)["last_hidden_state"]
 
 
 class Decoder(nn.Module):
@@ -31,7 +29,6 @@ class Decoder(nn.Module):
         # self.model = nn.TransformerDecoder()
 
     def forward(self, tensor: Tensor):
-
         pass
 
 
@@ -39,13 +36,12 @@ class Model(pl.LightningModule):
     def __init__(self):
 
         self.encoder = Encoder()
-        self.decoder = Decoder()
 
 
 if __name__ == "__main__":
-    dataset = _VideoDataset("./data/", 16, lambda x: TF.to_tensor(x))
+    dataset = _VideoDataset("./videos/", 16, lambda x: TF.to_tensor(x))
     x = DataLoader(dataset, batch_size=2)
-
+    encoder = Encoder()
     for i in x:
         print(i.shape)
         break
