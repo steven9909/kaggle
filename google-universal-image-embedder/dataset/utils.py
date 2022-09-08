@@ -1,5 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor
 import os
-from threading import RLock, Thread
+from pathlib import Path
+from threading import Thread
 from typing import List
 from urllib.error import HTTPError
 
@@ -7,7 +9,8 @@ from pytube import Search, YouTube
 from tinydb import Query, TinyDB
 from tinydb.table import Document
 
-keywords = {
+
+categories = {
     "apparel & accessories": 0.2,
     "packaged goods": 0.2,
     "landmarks": 0.196,
@@ -23,56 +26,47 @@ keywords = {
 
 
 class VideoDownloadManager:
-    def __init__(self, path, download_dir):
-        self.database = TinyDB(path)
-        self.download_dir = download_dir
-        self.db_lock = RLock()
+    def __init__(self, db: TinyDB, download_dir: Path):
 
-    def fetch_urls(self):
-        fetcher = VideoUrlFetcher(self.database)
-        fetcher.fetch_urls()
+        self.db = db
+        self.download_dir = download_dir
 
     def create_download_jobs(self):
-        threads = []
-        video_query = Query()
 
-        for keyword, _ in keywords.items():
-            with self.db_lock:
-                undownloaded = self.database.search(
-                    video_query.downloaded == False and video_query.category == keyword
+        query = Query()
+
+        with ThreadPoolExecutor() as executor:
+
+            for category in categories.keys():
+                undownloaded = self.db.search(
+                    query.downloaded == False and query.category == category
                 )
-                threads.append(
-                    Thread(target=self.download_job, args=(keyword, undownloaded))
-                )
+                executor.submit(self.download_job, category, undownloaded)
 
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
+            executor.shutdown(True)
 
     def download_job(self, category: str, videos: List[Document]):
-        downloader = VideoDownloader(self.database, self.download_dir)
+        downloader = VideoDownloader(self.db, self.download_dir)
         for video in videos:
-            downloader.download(category, video["video_id"])
+            downloader.download(category, video.video_id)
 
 
 class VideoDownloader:
 
     YOUTUBE_LINK = "https://youtu.be/"
 
-    def __init__(self, database: TinyDB, download_dir: str):
-        self.database = database
+    def __init__(self, db: TinyDB, download_dir: str):
+        self.db = db
         self.download_dir = download_dir
 
     def download(self, category: str, video_id: str):
-        video_query = Query()
-        video = self.database.search(video_query.video_id == video_id)
+        query = Query()
+        video = self.db.search(query.video_id == video_id)
         if not video:
-            id = self.database.insert(
+            id = self.db.insert(
                 {"video_id": video_id, "category": category, "downloaded": False}
             )
-            video = self.database.get(doc_id=id)
+            video = self.db.get(doc_id=id)
         else:
             video = video[0]
 
@@ -85,23 +79,23 @@ class VideoDownloader:
                 )
             except HTTPError:
                 return False
-            self.database.update({"downloaded": True}, video_query.video_id == video_id)
+            self.db.update({"downloaded": True}, query.video_id == video_id)
             return True
         else:
             return True
 
 
-class VideoUrlFetcher:
+class VideoURLFetcher:
     def __init__(self, database: TinyDB, total_time_mins=10):
-        self.database = database
+        self.db = database
         self.total_time = total_time_mins * 60
 
     def fetch_urls(self):
-        for category, length_ratio in keywords.items():
+        for category, length_ratio in categories.items():
             category_time = self.total_time * length_ratio
             s = Search(category)
 
-            video_query = Query()
+            query = Query()
 
             results = s.results
 
@@ -112,9 +106,9 @@ class VideoUrlFetcher:
                     except:
                         continue
                     video_id = result.video_id
-                    video = self.database.search(video_query.video_id == video_id)
+                    video = self.db.search(query.video_id == video_id)
                     if not video:
-                        self.database.insert(
+                        self.db.insert(
                             {
                                 "video_id": video_id,
                                 "category": category,
@@ -132,5 +126,10 @@ class VideoUrlFetcher:
 
 
 if __name__ == "__main__":
-    manager = VideoDownloadManager("db.json", os.path.join(os.getcwd(), "videos"))
+    db = TinyDB("db.json")
+
+    fetcher = VideoURLFetcher(db)
+    fetcher.fetch_urls()
+
+    manager = VideoDownloadManager(db, Path("./videos"))
     manager.create_download_jobs()
