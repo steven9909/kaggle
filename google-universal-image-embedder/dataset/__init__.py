@@ -54,7 +54,7 @@ class _VideoDataset(Dataset):
     def __getitem__(self, idx: int) -> Tensor:
 
         video = Video(self.samples[idx][0])
-        start = random.uniform(0.0, video.length - self.clip_len)
+        start = int(random.uniform(0.0, video.length - self.clip_len))
         frames = map(self.transform, video.read(start, self.clip_len))
 
         return stack(list(frames))
