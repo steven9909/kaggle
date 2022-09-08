@@ -1,6 +1,6 @@
 import random
 from pathlib import Path
-from typing import Iterator, Tuple
+from typing import Callable, Iterator, Tuple
 
 import cv2
 import numpy as np
@@ -38,7 +38,12 @@ class Video:
 
 
 class _VideoDataset(Dataset):
-    def __init__(self, data_dir: Path, clip_len: int, transform):
+    def __init__(
+        self,
+        data_dir: Path,
+        clip_len: int,
+        transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
+    ):
 
         super(VideoDataset).__init__()
         self.data_dir = data_dir
@@ -59,15 +64,23 @@ class _VideoDataset(Dataset):
 
 
 class VideoDataset(pl.LightningDataModule):
-    def __init__(self, data_dir: Path, batch_size: int = 32):
+    def __init__(
+        self,
+        data_dir: Path,
+        clip_len: int,
+        transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
+        batch_size: int = 32,
+    ):
 
         super().__init__()
         self.data_dir = data_dir
+        self.clip_len = clip_len
+        self.transform = transform
         self.batch_size = batch_size
 
     def setup(self, stage: str):
 
-        dataset = _VideoDataset(self.data_dir)
+        dataset = _VideoDataset(self.data_dir, self.clip_len, self.transform)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))
