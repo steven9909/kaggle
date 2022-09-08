@@ -66,6 +66,7 @@ class VideoDataset(pl.LightningDataModule):
         self.batch_size = batch_size
 
     def setup(self, stage: str):
+
         dataset = _VideoDataset(self.data_dir)
 
         fit_len = int(0.8 * len(dataset))
@@ -75,12 +76,15 @@ class VideoDataset(pl.LightningDataModule):
         self.datasets = random_split(dataset, [fit_len, val_len, tst_len])
 
     def train_dataloader(self):
+
         return DataLoader(self.datasets[0], batch_size=self.batch_size)
 
     def val_dataloader(self):
+
         return DataLoader(self.datasets[1], batch_size=self.batch_size)
 
     def test_dataloader(self):
+
         return DataLoader(self.datasets[2], batch_size=self.batch_size)
 
 
