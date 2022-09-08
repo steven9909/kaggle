@@ -36,7 +36,6 @@ class VideoDownloadManager:
         query = Query()
 
         with ThreadPoolExecutor() as executor:
-
             for category in categories.keys():
                 undownloaded = self.db.search(
                     query.downloaded == False and query.category == category
@@ -46,9 +45,11 @@ class VideoDownloadManager:
             executor.shutdown(True)
 
     def download_job(self, category: str, videos: List[Document]):
+
         downloader = VideoDownloader(self.db, self.download_dir)
+
         for video in videos:
-            downloader.download(category, video.video_id)
+            downloader.download(category, video["video_id"])
 
 
 class VideoDownloader:
@@ -131,5 +132,5 @@ if __name__ == "__main__":
     fetcher = VideoURLFetcher(db)
     fetcher.fetch_urls()
 
-    manager = VideoDownloadManager(db, Path("./videos"))
+    manager = VideoDownloadManager(db, Path("videos"))
     manager.create_download_jobs()
