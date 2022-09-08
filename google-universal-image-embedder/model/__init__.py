@@ -1,13 +1,14 @@
-from transformers import ViTFeatureExtractor, ViTModel
-from PIL import Image
 import pytorch_lightning as pl
-from torch import nn
-from torch import Tensor
+from PIL import Image
 from PIL.Image import Image as PILImage
+from torch import Tensor, nn
+from transformers import ViTFeatureExtractor, ViTModel
+from dataset import _VideoDataset
+import torchvision.transforms.functional as TF
 
 
 class Encoder(nn.Module):
-    def __init__(self, pretrained: str = "google/vit-base-patch16-224-in21k"):
+    def __init__(self):
 
         super().__init__()
         self.feature_extractor = ViTFeatureExtractor.from_pretrained(pretrained)
@@ -36,3 +37,12 @@ class Model(pl.LightningModule):
 
         self.encoder = Encoder()
         self.decoder = Decoder()
+
+
+if __name__ == "__main__":
+    dataset = _VideoDataset("./data/", 16, lambda x: TF.to_tensor(x))
+    x = DataLoader(dataset, batch_size=2)
+
+    for i in x:
+        print(i.shape)
+        break
