@@ -3,8 +3,11 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 from torch import Tensor, nn
 from transformers import ViTFeatureExtractor, ViTModel
+<<<<<<< HEAD
 from dataset import _VideoDataset
 import torchvision.transforms.functional as TF
+=======
+>>>>>>> b13ba909a0353657afa8c0751e8847cfaadc180d
 
 
 class Encoder(nn.Module):

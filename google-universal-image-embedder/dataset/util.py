@@ -1,11 +1,11 @@
-from threading import Thread
-from threading import RLock
-from tinydb import TinyDB, Query
-from tinydb.table import Document
-from pytube import YouTube, Search
 import os
-from urllib.error import HTTPError
+from threading import RLock, Thread
 from typing import List
+from urllib.error import HTTPError
+
+from pytube import Search, YouTube
+from tinydb import Query, TinyDB
+from tinydb.table import Document
 
 keywords = {
     "apparel & accessories": 0.2,
