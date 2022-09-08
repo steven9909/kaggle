@@ -12,4 +12,5 @@ transformers==4.21.2
 Pillow==9.2.0
 opencv-python==4.6.0.66
 torchvision==0.13.1
+tinydb==4.7.0
 ```
