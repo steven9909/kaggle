@@ -1,9 +1,8 @@
-from transformers import ViTFeatureExtractor, ViTModel
-from PIL import Image
 import pytorch_lightning as pl
-from torch import nn
-from torch import Tensor
+from PIL import Image
 from PIL.Image import Image as PILImage
+from torch import Tensor, nn
+from transformers import ViTFeatureExtractor, ViTModel
 
 
 class Encoder(nn.Module):
