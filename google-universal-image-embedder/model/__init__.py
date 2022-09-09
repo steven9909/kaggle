@@ -6,42 +6,28 @@ from transformers import ViTFeatureExtractor, ViTModel, ViTConfig
 from dataset import _VideoDataset
 import torchvision.transforms.functional as TF
 from torch.utils.data import DataLoader
-
-
-class Encoder(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        configuration = ViTConfig(
-            hidden_size=64, intermediate_size=256, num_attention_heads=8
-        )
-        self.model = ViTModel(configuration)
-
-    def forward(self, image: Tensor) -> Tensor:
-
-        return self.model(image)["last_hidden_state"]
-
-
-class Decoder(nn.Module):
-    def __init__(self):
-
-        super().__init__()
-        # self.model = nn.TransformerDecoder()
-
-    def forward(self, tensor: Tensor):
-        pass
+from model.transformer.model import PatchEmbedder, ViT
+import numpy as np
 
 
 class Model(pl.LightningModule):
     def __init__(self):
+        pass
 
-        self.encoder = Encoder()
+
+def transform(x: np.ndarray):
+    y = TF.to_tensor(x)
+    y = TF.resize(y, [224, 224])
+    y = TF.normalize(y, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    return y
 
 
 if __name__ == "__main__":
-    dataset = _VideoDataset("./videos/", 16, lambda x: TF.to_tensor(x))
+    dataset = _VideoDataset("./videos/", 16, transform=transform)
     x = DataLoader(dataset, batch_size=2)
-    encoder = Encoder()
+    encoder = ViT()
     for i in x:
         print(i.shape)
+        output = encoder(i, None)
+        print(output.shape)
         break
