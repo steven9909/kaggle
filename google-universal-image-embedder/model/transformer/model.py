@@ -81,11 +81,11 @@ class PositionalEncoder(nn.Module):
         x = x * math.sqrt(self.d_model)
         seq_len = x.size(1)
         # TODO CUDA
-        x = (
-            x
-            + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False).cuda()
-        )
-        # x = x + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False)
+        # x = (
+        #     x
+        #     + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False).cuda()
+        # )
+        x = x + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False)
         return x
 
 
@@ -119,7 +119,21 @@ class Encoder(nn.Module):
         x = self.pe(src)
         for i in range(self.N):
             x = self.layers[i](x, mask)
-        return self.norm(x)
+        return self.norm(x) + src
+
+
+class Decoder(nn.Module):
+    def __init__(self, d_model, N, heads):
+        super().__init__()
+        self.N = N
+        self.layers = get_clones(EncoderLayer(d_model, heads), N)
+        self.norm = torch.nn.LayerNorm(d_model)
+
+    def forward(self, src, mask):
+        x = src
+        for i in range(self.N):
+            x = self.layers[i](x, mask)
+        return self.norm(x) + src
 
 
 class PatchEmbedder(nn.Module):
@@ -154,10 +168,13 @@ class ViT(nn.Module):
             d_token=d_token,
         )
 
-        self.encoder = Encoder(d_model=d_token, N=N, heads=heads, seq_len=seq_len)
+        self.encoder = Encoder(
+            d_model=d_token, N=int(N / 2), heads=heads, seq_len=seq_len
+        )
+        self.decoder = Decoder(d_model=d_token, N=int(N / 2), heads=heads)
 
     def forward(self, x, mask):
         x = self.patch_embed(x)
-        print(x.shape)
         x = self.encoder(x, mask)
+        x = self.decoder(x, mask)
         return x

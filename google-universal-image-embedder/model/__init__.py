@@ -1,18 +1,14 @@
 import pytorch_lightning as pl
-from PIL import Image
-from PIL.Image import Image as PILImage
-from torch import Tensor, nn
-from transformers import ViTFeatureExtractor, ViTModel, ViTConfig
 from dataset import _VideoDataset
 import torchvision.transforms.functional as TF
 from torch.utils.data import DataLoader
-from model.transformer.model import PatchEmbedder, ViT
+from model.transformer.model import ViT
 import numpy as np
 
 
 class Model(pl.LightningModule):
     def __init__(self):
-        pass
+        self.encoder = ViT()
 
 
 def transform(x: np.ndarray):
