@@ -2,7 +2,6 @@
 venv/
 db.json
 videos/
-dataset/__pycache__/
-model/__pycache__/
-model/transformer/__pycache__/
+__pycache__/
+*.pyc
 lightning_logs/
