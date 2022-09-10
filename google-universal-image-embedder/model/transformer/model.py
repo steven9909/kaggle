@@ -22,7 +22,7 @@ def get_clones(module, N):
 
 class MultiHeadedAttention(nn.Module):
     def __init__(self, heads, d_model, drop_p=0.1):
-        super(MultiHeadedAttention, self).__init__()
+        super().__init__()
         self.d_model = d_model
         self.d_k = d_model // heads
         self.heads = heads
@@ -54,7 +54,7 @@ class MultiHeadedAttention(nn.Module):
 
 class FeedForward(nn.Module):
     def __init__(self, d_model, d_ff=2048, dropout=0.1):
-        super(FeedForward, self).__init__()
+        super().__init__()
         self.w_1 = nn.Linear(d_model, d_ff)
         self.w_2 = nn.Linear(d_ff, d_model)
         self.dropout = nn.Dropout(dropout)
@@ -65,7 +65,7 @@ class FeedForward(nn.Module):
 
 class PositionalEncoder(nn.Module):
     def __init__(self, d_model, seq_len):
-        super(PositionalEncoder, self).__init__()
+        super().__init__()
         self.d_model = d_model
 
         pe = torch.zeros(seq_len, d_model)
@@ -80,16 +80,14 @@ class PositionalEncoder(nn.Module):
     def forward(self, x):
         x = x * math.sqrt(self.d_model)
         seq_len = x.size(1)
-        # TODO CUDA
-        # x = (
-        #     x
-        #     + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False).cuda()
-        # )
-        x = x + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False)
+        x = (
+            x
+            + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False).cuda()
+        )
         return x
 
 
-class EncoderLayer(nn.Module):
+class AttentionLayer(nn.Module):
     def __init__(self, d_model, heads, dropout=0.1):
         super().__init__()
         self.norm_1 = torch.nn.LayerNorm(d_model)
@@ -112,7 +110,7 @@ class Encoder(nn.Module):
         super().__init__()
         self.N = N
         self.pe = PositionalEncoder(d_model, seq_len)
-        self.layers = get_clones(EncoderLayer(d_model, heads), N)
+        self.layers = get_clones(AttentionLayer(d_model, heads), N)
         self.norm = torch.nn.LayerNorm(d_model)
 
     def forward(self, src, mask):
@@ -126,7 +124,7 @@ class Decoder(nn.Module):
     def __init__(self, d_model, N, heads):
         super().__init__()
         self.N = N
-        self.layers = get_clones(EncoderLayer(d_model, heads), N)
+        self.layers = get_clones(AttentionLayer(d_model, heads), N)
         self.norm = torch.nn.LayerNorm(d_model)
 
     def forward(self, src, mask):
@@ -137,7 +135,7 @@ class Decoder(nn.Module):
 
 
 class PatchEmbedder(nn.Module):
-    def __init__(self, patch_size=16, in_channels=3, d_token=64):
+    def __init__(self, patch_size, in_channels, d_token):
         super().__init__()
         self.proj = nn.Conv2d(
             in_channels, d_token, kernel_size=patch_size, stride=patch_size
@@ -148,6 +146,14 @@ class PatchEmbedder(nn.Module):
         x = x.view(B, C, S * H, W)
         x = self.proj(x).flatten(2).transpose(1, 2)
         return x
+
+
+class PatchDeembedder(nn.Module):
+    def __init__(self, d_token, out_channels):
+        super().__init__()
+
+    def forward(self, x):
+        pass
 
 
 class ViT(nn.Module):
