@@ -41,7 +41,7 @@ class Model(pl.LightningModule):
     ):
 
         super().__init__()
-        mask = construct_mask(seq_len // n_heads)
+        mask = construct_mask(seq_len)
         self.register_buffer("mask", mask)
         self.model = ViT(
             d_token=d_token,
@@ -83,7 +83,7 @@ class Model(pl.LightningModule):
 
         return optim.Adam(self.parameters(), lr=0.002)
 
-    def training_step(self, batch: List[Tensor], _):
+    def training_step(self, batch: List[Tensor], batch_index: int):
         """
         Training step
 
@@ -97,7 +97,6 @@ class Model(pl.LightningModule):
         Args:
             batch (List[Tensor]): list of S tensors of shape (N, C, H, W)
         """
-
         # TODO: needs rework
         current_batch = cat(batch, dim=2)
         target_batch = roll(current_batch, -1)

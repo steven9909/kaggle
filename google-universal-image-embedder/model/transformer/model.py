@@ -142,13 +142,12 @@ class PatchEmbedder(nn.Module):
             in_channels, d_token, kernel_size=patch_size, stride=patch_size
         )
 
-    def forward(self, x):
+    def forward(self, x: Tensor):
         # B, S, C, H, W = x.shape
         # switch channel and sequence dimension to preserve channel when we reshape later
         # x = x.transpose(1, 2).contiguous()
         # x = x.view(B, C, S * H, W)
         x = self.proj(x)
-
         # after projection x: (B, D_TOKEN, (IMAGE_SIZE*SEQ_LEN)/PATCH_SIZE, IMAGE_SIZE/PATCH_SIZE)
         x = x.flatten(2).transpose(1, 2)
         # final shape of x: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
@@ -158,25 +157,22 @@ class PatchEmbedder(nn.Module):
 # Perform patch deembedding using a deconvolution layer
 # Eseentially the reverse operation of PatchEmbedder
 class PatchUnembedder(nn.Module):
-    def __init__(self, d_token, out_channels, patch_size, image_size):
+    def __init__(self, d_token, out_channels, patch_size, image_size, seq_len):
         super().__init__()
         self.unproj = nn.ConvTranspose2d(
             d_token, out_channels, kernel_size=patch_size, stride=patch_size
         )
         self.image_size = image_size
         self.patch_size = patch_size
+        self.seq_len = seq_len
 
     # input x shape: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
     def forward(self, x: Tensor):
-        print(x.shape)
         x = x.transpose(1, 2).unflatten(
             2, (self.image_size, self.image_size // self.patch_size)
         )
         print(x.shape)
         x = self.unproj(x)
-        # B, C, S_H, W = x.shape
-        # x = x.view(B, C, S_H // self.image_size, self.image_size, W)
-        # x = x.transpose(1, 2)
         return x
 
 
@@ -200,11 +196,12 @@ class ViT(nn.Module):
             d_token=d_token,
         )
 
-        self.patch_deembed = PatchUnembedder(
+        self.patch_unembed = PatchUnembedder(
             patch_size=patch_size,
             d_token=d_token,
             out_channels=in_channels,
             image_size=image_size,
+            seq_len=seq_len,
         )
 
         self.encoder = Encoder(
@@ -216,5 +213,5 @@ class ViT(nn.Module):
         x = self.patch_embed(x)
         x = self.encoder(x, mask)
         x = self.decoder(x, mask)
-        x = self.patch_deembed(x)
+        x = self.patch_unembed(x)
         return x
