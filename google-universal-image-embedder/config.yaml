@@ -1,0 +1,12 @@
+image_size: 224
+patch_size: 16
+in_channels: 3
+n_heads: 8
+d_token: 64
+n_enc_layers: 4
+n_dec_layers: 4
+batch_size: 2
+seq_len: 3136
+normalize:
+  mean: [0.5, 0.5, 0.5]
+  std: [0.5, 0.5, 0.5]
