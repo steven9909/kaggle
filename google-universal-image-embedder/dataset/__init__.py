@@ -33,7 +33,7 @@ class Video:
         )
 
 
-class _VideoDataset(Dataset):
+class VideoDataset(Dataset):
     def __init__(
         self,
         data_dir: Path,
@@ -41,7 +41,7 @@ class _VideoDataset(Dataset):
         transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
     ):
 
-        super(VideoDataModule).__init__()
+        super().__init__()
         self.data_dir = data_dir
         self.clip_len = clip_len
         self.transform = transform
@@ -74,7 +74,7 @@ class VideoDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
 
     def setup(self, stage: str):
-        dataset = _VideoDataset(self.data_dir, self.clip_len, self.transform)
+        dataset = VideoDataset(self.data_dir, self.clip_len, self.transform)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))

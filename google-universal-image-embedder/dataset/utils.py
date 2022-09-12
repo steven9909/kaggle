@@ -74,7 +74,7 @@ class VideoDownloader:
         if not video["downloaded"]:
             try:
                 YouTube(VideoDownloader.YOUTUBE_LINK + video_id).streams.filter(
-                    res="360p", only_video=True
+                    res="360p"
                 ).first().download(
                     output_path=os.path.join(self.download_dir, category)
                 )
