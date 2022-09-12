@@ -1,8 +1,9 @@
+import copy
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import copy
-import math
 
 
 def attention(q, k, v, d_k, mask=None, dropout=None):
@@ -117,7 +118,7 @@ class Encoder(nn.Module):
         x = self.pe(src)
         for i in range(self.N):
             x = self.layers[i](x, mask)
-        return self.norm(x) + src
+        return self.norm(x)
 
 
 class Decoder(nn.Module):
@@ -131,9 +132,10 @@ class Decoder(nn.Module):
         x = src
         for i in range(self.N):
             x = self.layers[i](x, mask)
-        return self.norm(x) + src
+        return self.norm(x)
 
 
+# Perform patch embedding using a convolution layer
 class PatchEmbedder(nn.Module):
     def __init__(self, patch_size, in_channels, d_token):
         super().__init__()
@@ -142,29 +144,51 @@ class PatchEmbedder(nn.Module):
         )
 
     def forward(self, x):
-        B, S, C, H, W = x.shape
-        x = x.view(B, C, S * H, W)
-        x = self.proj(x).flatten(2).transpose(1, 2)
+        # B, S, C, H, W = x.shape
+        # switch channel and sequence dimension to preserve channel when we reshape later
+        # x = x.transpose(1, 2).contiguous()
+        # x = x.view(B, C, S * H, W)
+        x = self.proj(x)
+
+        # after projection x: (B, D_TOKEN, (IMAGE_SIZE*SEQ_LEN)/PATCH_SIZE, IMAGE_SIZE/PATCH_SIZE)
+        x = x.flatten(2).transpose(1, 2)
+        # final shape of x: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
         return x
 
 
-class PatchDeembedder(nn.Module):
-    def __init__(self, d_token, out_channels):
+# Perform patch deembedding using a deconvolution layer
+# Eseentially the reverse operation of PatchEmbedder
+class PatchUnembedder(nn.Module):
+    def __init__(self, d_token, out_channels, patch_size, image_size):
         super().__init__()
+        self.deproj = nn.ConvTranspose2d(
+            d_token, out_channels, kernel_size=patch_size, stride=patch_size
+        )
+        self.unflatten = nn.Unflatten(2, (image_size, image_size // patch_size))
+        self.image_size = image_size
 
+    # input x shape: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
     def forward(self, x):
-        pass
+        x = x.transpose(1, 2)
+        x = self.unflatten(x)
+        x = self.deproj(x)
+        # B, C, S_H, W = x.shape
+        # x = x.view(B, C, S_H // self.image_size, self.image_size, W)
+        # x = x.transpose(1, 2)
+        return x
 
 
 class ViT(nn.Module):
     def __init__(
         self,
-        d_token=64,
-        N=8,
-        heads=8,
-        seq_len=3136,
-        patch_size=16,
-        in_channels=3,
+        d_token,
+        n_encoder,
+        n_decoder,
+        heads,
+        seq_len,
+        patch_size,
+        in_channels,
+        image_size,
     ):
         super().__init__()
 
@@ -174,13 +198,21 @@ class ViT(nn.Module):
             d_token=d_token,
         )
 
-        self.encoder = Encoder(
-            d_model=d_token, N=int(N / 2), heads=heads, seq_len=seq_len
+        self.patch_deembed = PatchUnembedder(
+            patch_size=patch_size,
+            d_token=d_token,
+            out_channels=in_channels,
+            image_size=image_size,
         )
-        self.decoder = Decoder(d_model=d_token, N=int(N / 2), heads=heads)
+
+        self.encoder = Encoder(
+            d_model=d_token, N=n_encoder, heads=heads, seq_len=seq_len
+        )
+        self.decoder = Decoder(d_model=d_token, N=n_decoder, heads=heads)
 
     def forward(self, x, mask):
         x = self.patch_embed(x)
         x = self.encoder(x, mask)
         x = self.decoder(x, mask)
+        x = self.patch_deembed(x)
         return x
