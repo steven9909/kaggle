@@ -20,7 +20,7 @@ SEQ_LEN = ((IMAGE_SIZE // PATCH_SIZE) ** 2) * FRAME_COUNT
 
 def transform(x: np.ndarray):
     y = TF.to_tensor(x)
-    y = TF.resize(y, [224, 224])
+    y = TF.resize(y, [IMAGE_SIZE, IMAGE_SIZE])
     y = TF.normalize(y, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     return y
 
