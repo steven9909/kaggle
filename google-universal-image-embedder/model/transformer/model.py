@@ -1,16 +1,19 @@
 import copy
 import math
+from unittest.mock import patch
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 
 def attention(q, k, v, d_k, mask=None, dropout=None):
+
     scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
         mask = mask.unsqueeze(1)
-        scores = scores.masked_fill(mask == 0, -1e9)
+        scores = scores.masked_fill(~mask, -1e9)
     p_attn = scores.softmax(dim=-1)
     if dropout is not None:
         p_attn = dropout(p_attn)
@@ -157,17 +160,20 @@ class PatchEmbedder(nn.Module):
 class PatchUnembedder(nn.Module):
     def __init__(self, d_token, out_channels, patch_size, image_size):
         super().__init__()
-        self.deproj = nn.ConvTranspose2d(
+        self.unproj = nn.ConvTranspose2d(
             d_token, out_channels, kernel_size=patch_size, stride=patch_size
         )
-        self.unflatten = nn.Unflatten(2, (image_size, image_size // patch_size))
         self.image_size = image_size
+        self.patch_size = patch_size
 
     # input x shape: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
-    def forward(self, x):
-        x = x.transpose(1, 2)
-        x = self.unflatten(x)
-        x = self.deproj(x)
+    def forward(self, x: Tensor):
+        print(x.shape)
+        x = x.transpose(1, 2).unflatten(
+            2, (self.image_size, self.image_size // self.patch_size)
+        )
+        print(x.shape)
+        x = self.unproj(x)
         # B, C, S_H, W = x.shape
         # x = x.view(B, C, S_H // self.image_size, self.image_size, W)
         # x = x.transpose(1, 2)

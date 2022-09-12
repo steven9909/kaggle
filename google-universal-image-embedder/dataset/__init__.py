@@ -33,25 +33,25 @@ class Video:
         )
 
 
-class _VideoDataset(Dataset):
+class VideoDataset(Dataset):
     def __init__(
         self,
         data_dir: Path,
-        clip_len: int,
+        seq_len: int,
         transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
     ):
 
-        super(VideoDataModule).__init__()
+        super().__init__()
         self.data_dir = data_dir
-        self.clip_len = clip_len
+        self.seq_len = seq_len
         self.transform = transform
         self.samples = make_dataset(data_dir, extensions="mp4")
 
     def __getitem__(self, idx: int) -> List[Tensor]:
 
         video = Video(self.samples[idx][0])
-        start = int(random.uniform(0.0, video.length - self.clip_len))
-        frames = map(self.transform, video.read(start, self.clip_len))
+        start = int(random.uniform(0.0, video.length - self.seq_len))
+        frames = map(self.transform, video.read(start, self.seq_len))
 
         return list(frames)
 
@@ -63,18 +63,18 @@ class VideoDataModule(pl.LightningDataModule):
     def __init__(
         self,
         data_dir: Path,
-        clip_len: int,
-        transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
         batch_size: int = 32,
+        seq_len: int = 16,
+        transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
     ):
         super().__init__()
         self.data_dir = data_dir
-        self.clip_len = clip_len
         self.transform = transform
+        self.seq_len = seq_len
         self.batch_size = batch_size
 
     def setup(self, stage: str):
-        dataset = _VideoDataset(self.data_dir, self.clip_len, self.transform)
+        dataset = VideoDataset(self.data_dir, self.seq_len, self.transform)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))
