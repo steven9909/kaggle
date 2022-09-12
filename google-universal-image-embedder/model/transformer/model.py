@@ -81,10 +81,7 @@ class PositionalEncoder(nn.Module):
     def forward(self, x):
         x = x * math.sqrt(self.d_model)
         seq_len = x.size(1)
-        x = (
-            x
-            + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False).cuda()
-        )
+        x = x + torch.autograd.Variable(self.pe[:, :seq_len], requires_grad=False)
         return x
 
 
