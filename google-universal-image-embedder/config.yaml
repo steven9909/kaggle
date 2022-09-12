@@ -1,3 +1,4 @@
+data_dir: "data/"
 image_size: 224
 patch_size: 16
 in_channels: 3

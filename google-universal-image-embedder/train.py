@@ -16,7 +16,9 @@ def main(config: DictConfig):
             T.Normalize(config.normalize.mean, config.normalize.std),
         ]
     )
-    data_module = VideoDataModule("data/", config.seq_len, config.batch_size, transform)
+    data_module = VideoDataModule(
+        config.data_dir, config.seq_len, config.batch_size, transform
+    )
     model = Model(
         config.image_size,
         config.patch_size,
