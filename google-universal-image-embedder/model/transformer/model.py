@@ -171,7 +171,7 @@ class PatchUnembedder(nn.Module):
     def forward(self, x: Tensor):
         print(x.shape)
         x = x.transpose(1, 2).unflatten(
-            1, (self.image_size, self.image_size // self.patch_size)
+            2, (self.image_size, self.image_size // self.patch_size)
         )
         print(x.shape)
         x = self.unproj(x)
