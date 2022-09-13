@@ -6,7 +6,6 @@ import torch.nn as nn
 from torch import BoolTensor, Tensor, cat, optim
 
 from model.shift import rshift_2d
-
 from model.transformer.model import ViT
 
 
@@ -90,7 +89,7 @@ class Model(pl.LightningModule):
             self.parameters(), lr=0.001, betas=[0.9, 0.999], weight_decay=0.1
         )
 
-    def training_step(self, batch: List[Tensor], batch_index: int):
+    def training_step(self, batch: List[Tensor], _):
         """
         Training step
 
@@ -104,13 +103,12 @@ class Model(pl.LightningModule):
         Args:
             batch (List[Tensor]): list of S tensors of shape (N, C, H, W)
         """
-        current_batch = cat(batch, dim=2)
-        target = current_batch
 
-        output = self(current_batch, self.mask)
-        output = rshift_2d(output, self.patch_size)
-        output[:, :, 0 : self.patch_size, 0 : self.patch_size] = target[
-            :, :, 0 : self.patch_size, 0 : self.patch_size
-        ]
+        target = cat(batch, dim=2)
+        output = self(target, self.mask)
+
+        ps = self.patch_size
+        output = rshift_2d(output, ps)
+        output[..., :ps, :ps] = target[..., :ps, :ps]
 
         return self.loss(output, target)

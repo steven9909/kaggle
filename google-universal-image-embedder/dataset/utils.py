@@ -1,14 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from threading import Thread
 from typing import List
 from urllib.error import HTTPError
 
 from pytube import Search, YouTube
 from tinydb import Query, TinyDB
 from tinydb.table import Document
-
 
 categories = {
     "apparel & accessories": 0.2,
@@ -118,11 +116,13 @@ class VideoURLFetcher:
                         )
 
                     category_time -= result.length
+
                     if category_time <= 0:
                         break
 
-                results = s.get_next_results()
-                if results is None:
+                s.get_next_results()
+
+                if (results := s.results) is None:
                     break
 
 
