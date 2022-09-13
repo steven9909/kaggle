@@ -168,7 +168,11 @@ class PatchUnembedder(nn.Module):
     # input x shape: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
     def forward(self, x: Tensor):
         x = x.transpose(1, 2).unflatten(
-            2, (self.image_size, self.image_size // self.patch_size)
+            2,
+            (
+                (self.image_size * self.seq_len) // self.patch_size,
+                self.image_size // self.patch_size,
+            ),
         )
         x = self.unproj(x)
         return x
