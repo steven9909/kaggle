@@ -1,5 +1,4 @@
 from torch import Tensor, cat, roll
-from torchvision.transforms import functional as TF
 
 
 def lshift_2d(x: Tensor, patch_size: int) -> Tensor:
