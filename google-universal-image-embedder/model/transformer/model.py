@@ -1,6 +1,5 @@
 import copy
 import math
-from unittest.mock import patch
 
 import torch
 import torch.nn as nn
@@ -171,7 +170,6 @@ class PatchUnembedder(nn.Module):
         x = x.transpose(1, 2).unflatten(
             2, (self.image_size, self.image_size // self.patch_size)
         )
-        print(x.shape)
         x = self.unproj(x)
         return x
 

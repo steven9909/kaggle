@@ -3,7 +3,9 @@ from typing import List
 import numpy as np
 import pytorch_lightning as pl
 import torch.nn as nn
-from torch import BoolTensor, Tensor, cat, optim, roll
+from torch import BoolTensor, Tensor, cat, optim
+
+from model.shift import rshift_2d
 
 from model.transformer.model import ViT
 
@@ -41,6 +43,9 @@ class Model(pl.LightningModule):
     ):
 
         super().__init__()
+
+        self.patch_size = patch_size
+
         mask = construct_mask(seq_len)
         self.register_buffer("mask", mask)
         self.model = ViT(
@@ -97,12 +102,13 @@ class Model(pl.LightningModule):
         Args:
             batch (List[Tensor]): list of S tensors of shape (N, C, H, W)
         """
-        # TODO: needs rework
         current_batch = cat(batch, dim=2)
-        target_batch = roll(current_batch, -1)
+        target = current_batch
 
         output = self(current_batch, self.mask)
-        output[:, :, -1, -1] = target_batch[:, :, -1, -1]
-        # TODO: needs rework
+        output = rshift_2d(output, self.patch_size)
+        output[:, :, 0 : self.patch_size, 0 : self.patch_size] = target[
+            :, :, 0 : self.patch_size, 0 : self.patch_size
+        ]
 
-        return self.loss(output, target_batch)
+        return self.loss(output, target)
