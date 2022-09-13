@@ -33,7 +33,7 @@ def main(config: DictConfig):
         config.n_dec_layers,
         config.clip_len * (image_size // patch_size) ** 2,
     )
-    trainer = pl.Trainer(max_epochs=2, accelerator="cpu")
+    trainer = pl.Trainer(max_epochs=2, accelerator="gpu")
     trainer.fit(model, data_module)
 
 

@@ -86,7 +86,9 @@ class Model(pl.LightningModule):
         Configure optimizers
         """
 
-        return optim.Adam(self.parameters(), lr=0.002)
+        return optim.Adam(
+            self.parameters(), lr=0.001, betas=[0.9, 0.999], weight_decay=0.1
+        )
 
     def training_step(self, batch: List[Tensor], batch_index: int):
         """
