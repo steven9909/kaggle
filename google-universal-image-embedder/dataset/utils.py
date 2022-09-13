@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List
+from typing import List, Callable
 from urllib.error import HTTPError
 
 from pytube import Search, YouTube
@@ -89,7 +89,12 @@ class VideoURLFetcher:
         self.db = database
         self.total_time = total_time_mins * 60
 
-    def fetch_urls(self):
+    def _default_video_predicate(video: YouTube) -> bool:
+        return video.length <= 300
+
+    def fetch_urls(
+        self, video_predicate: Callable[[YouTube], bool] = _default_video_predicate
+    ):
         for category, length_ratio in categories.items():
             category_time = self.total_time * length_ratio
             s = Search(category)
@@ -102,6 +107,8 @@ class VideoURLFetcher:
                 for result in results:
                     try:
                         result.check_availability()
+                        if not video_predicate(result):
+                            raise ValueError
                     except:
                         continue
                     video_id = result.video_id
