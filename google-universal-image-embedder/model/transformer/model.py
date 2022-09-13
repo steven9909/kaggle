@@ -156,21 +156,21 @@ class PatchEmbedder(nn.Module):
 # Perform patch deembedding using a deconvolution layer
 # Eseentially the reverse operation of PatchEmbedder
 class PatchUnembedder(nn.Module):
-    def __init__(self, d_token, out_channels, patch_size, image_size, seq_len):
+    def __init__(self, d_token, out_channels, patch_size, image_size, clip_len):
         super().__init__()
         self.unproj = nn.ConvTranspose2d(
             d_token, out_channels, kernel_size=patch_size, stride=patch_size
         )
         self.image_size = image_size
         self.patch_size = patch_size
-        self.seq_len = seq_len
+        self.clip_len = clip_len
 
     # input x shape: (B, (IMAGE_SIZE^2*SEQ_LEN)/PATCH_SIZE^2, D_TOKEN)
     def forward(self, x: Tensor):
         x = x.transpose(1, 2).unflatten(
             2,
             (
-                (self.image_size * self.seq_len) // self.patch_size,
+                (self.image_size * self.clip_len) // self.patch_size,
                 self.image_size // self.patch_size,
             ),
         )
@@ -189,6 +189,7 @@ class ViT(nn.Module):
         patch_size,
         in_channels,
         image_size,
+        clip_len,
     ):
         super().__init__()
 
@@ -203,7 +204,7 @@ class ViT(nn.Module):
             d_token=d_token,
             out_channels=in_channels,
             image_size=image_size,
-            seq_len=seq_len,
+            clip_len=clip_len,
         )
 
         self.encoder = Encoder(

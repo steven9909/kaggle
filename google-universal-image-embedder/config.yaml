@@ -6,8 +6,11 @@ n_heads: 8
 d_token: 64
 n_enc_layers: 4
 n_dec_layers: 4
-batch_size: 2
-clip_len: 16
+batch_size: 8
+clip_len: 8
 normalize:
   mean: [0.5, 0.5, 0.5]
   std: [0.5, 0.5, 0.5]
+db_loc: "db.json"
+dataset_time: 120
+fetch_urls: False

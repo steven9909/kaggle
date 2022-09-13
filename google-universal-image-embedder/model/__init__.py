@@ -39,6 +39,7 @@ class Model(pl.LightningModule):
         n_enc_layers: int,
         n_dec_layers: int,
         seq_len: int,
+        clip_len: int,
     ):
 
         super().__init__()
@@ -56,6 +57,7 @@ class Model(pl.LightningModule):
             patch_size=patch_size,
             in_channels=in_channels,
             image_size=image_size,
+            clip_len=clip_len,
         )
         self.loss = nn.MSELoss()
 

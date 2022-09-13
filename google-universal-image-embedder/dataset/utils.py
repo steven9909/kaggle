@@ -44,13 +44,13 @@ class VideoDownloadManager:
 
     def download_job(self, category: str, videos: List[Document]):
 
-        downloader = VideoDownloader(self.db, self.download_dir)
+        downloader = _VideoDownloader(self.db, self.download_dir)
 
         for video in videos:
             downloader.download(category, video["video_id"])
 
 
-class VideoDownloader:
+class _VideoDownloader:
 
     YOUTUBE_LINK = "https://youtu.be/"
 
@@ -71,7 +71,7 @@ class VideoDownloader:
 
         if not video["downloaded"]:
             try:
-                YouTube(VideoDownloader.YOUTUBE_LINK + video_id).streams.filter(
+                YouTube(_VideoDownloader.YOUTUBE_LINK + video_id).streams.filter(
                     res="360p"
                 ).first().download(
                     output_path=os.path.join(self.download_dir, category)
