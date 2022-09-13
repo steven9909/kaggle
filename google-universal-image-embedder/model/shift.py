@@ -21,9 +21,9 @@ def lshift_2d(x: Tensor, patch_size: int) -> Tensor:
     """
 
     before, last_col = x[..., :-patch_size], x[..., -patch_size:]
-    last_col = roll(last_col, patch_size, 3)
+    last_col = roll(last_col, patch_size, 2)
 
-    return cat([last_col, before], 4)
+    return cat([last_col, before], 3)
 
 
 def rshift_2d(x: Tensor, patch_size: int) -> Tensor:
@@ -46,6 +46,6 @@ def rshift_2d(x: Tensor, patch_size: int) -> Tensor:
     """
 
     first_col, after = x[..., :patch_size], x[..., patch_size:]
-    first_col = roll(first_col, -patch_size, 3)
+    first_col = roll(first_col, -patch_size, 2)
 
-    return cat([after, first_col], 4)
+    return cat([after, first_col], 3)
