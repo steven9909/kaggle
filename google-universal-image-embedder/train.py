@@ -56,7 +56,7 @@ def main(config: DictConfig):
     )
     trainer = pl.Trainer(
         default_root_dir=config.checkpoint_dir,
-        max_epochs=100,
+        max_epochs=5000,
         accelerator="gpu",
         resume_from_checkpoint=get_latest_checkpoint(Path(config.checkpoint_dir))
         if config.use_checkpoints
