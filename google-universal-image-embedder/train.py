@@ -1,10 +1,10 @@
 import hydra
 import pytorch_lightning as pl
 from omegaconf import DictConfig
+from torchvision import transforms as T
 
 from dataset import VideoDataModule
 from model import Model
-from torchvision import transforms as T
 
 
 @hydra.main(".", "config.yaml", None)
@@ -22,6 +22,7 @@ def main(config: DictConfig):
 
     image_size = config.image_size
     patch_size = config.patch_size
+    n_patchs_per_frame = (image_size // patch_size) ** 2
 
     model = Model(
         image_size,
@@ -31,7 +32,7 @@ def main(config: DictConfig):
         config.d_token,
         config.n_enc_layers,
         config.n_dec_layers,
-        config.clip_len * (image_size // patch_size) ** 2,
+        config.clip_len * n_patchs_per_frame,
     )
     trainer = pl.Trainer(max_epochs=2, accelerator="cpu")
     trainer.fit(model, data_module)
