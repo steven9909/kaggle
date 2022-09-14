@@ -218,3 +218,27 @@ class ViT(nn.Module):
         x = self.decoder(x, mask)
         x = self.patch_unembed(x)
         return x
+
+    def forward_features(self, x: Tensor) -> Tensor:
+        """
+        Forward features pass of Model
+
+        Note:
+            N: batch size
+            S: sequence length
+            C: channel size
+            H: image height
+            W: image width
+
+        Args:
+            x (Tensor): Input tensor of shape (N, C, S * H, W)
+
+        Returns:
+            Tensor: Output of shape (N, d_token)
+        """
+
+        x = self.patch_embed(x)
+        x = self.encoder(x, None)
+        x = x.mean(1)
+
+        return x

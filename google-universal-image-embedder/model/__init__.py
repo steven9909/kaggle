@@ -82,6 +82,26 @@ class Model(pl.LightningModule):
 
         return self.model(x, mask)
 
+    def forward_features(self, x: Tensor) -> Tensor:
+        """
+        Forward pass of Model for features
+
+        Note:
+            N: batch size
+            S: sequence length
+            C: channel size
+            H: image height
+            W: image width
+
+        Args:
+            x (Tensor): Input tensor of shape (N, C, S * H, W)
+
+        Returns:
+            Tensor: Output of shape (N, d_token)
+        """
+
+        return self.model.forward_features(x)
+
     def configure_optimizers(self):
         """
         Configure optimizers

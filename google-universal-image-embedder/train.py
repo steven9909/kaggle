@@ -2,10 +2,10 @@ from genericpath import isdir
 import hydra
 import pytorch_lightning as pl
 from omegaconf import DictConfig
+from torchvision import transforms as T
 
 from dataset import VideoDataModule
 from model import Model
-from torchvision import transforms as T
 
 import os
 from pathlib import Path
@@ -26,6 +26,7 @@ def main(config: DictConfig):
 
     image_size = config.image_size
     patch_size = config.patch_size
+    n_patchs_per_frame = (image_size // patch_size) ** 2
 
     def get_latest_checkpoint(checkpoint_dir: Path):
         max_version_num = -1
@@ -51,6 +52,9 @@ def main(config: DictConfig):
         config.d_token,
         config.n_enc_layers,
         config.n_dec_layers,
+<<<<<<< HEAD
+        config.clip_len * n_patchs_per_frame,
+=======
         config.clip_len * (image_size // patch_size) ** 2,
         config.clip_len,
     )
@@ -61,6 +65,7 @@ def main(config: DictConfig):
         resume_from_checkpoint=get_latest_checkpoint(Path(config.checkpoint_dir))
         if config.use_checkpoints
         else None,
+>>>>>>> 0e4064bd49d1047d61c90f93a81ad0b3a88ea7d8
     )
     trainer.fit(model, data_module)
 
