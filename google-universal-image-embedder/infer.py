@@ -27,7 +27,6 @@ def forward_autoregress(model: Model, x: Tensor, num_frames: int) -> Tensor:
     Returns:
         Tensor: Output of shape (N, d_token)
     """
-    """
 
     for i in range(num_frames):
         pass
@@ -81,7 +80,9 @@ def main(config: DictConfig):
         config.clip_len * n_patchs_per_frame,
     )
 
-    print(features(model, transform(Image.open("tesla.png")).unsqueeze(0)).shape)
+    print(
+        forward_features(model, transform(Image.open("tesla.png")).unsqueeze(0)).shape
+    )
 
 
 if __name__ == "__main__":

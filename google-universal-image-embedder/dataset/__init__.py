@@ -66,12 +66,14 @@ class VideoDataModule(pl.LightningDataModule):
         batch_size: int = 32,
         clip_len: int = 16,
         transform: Callable[[np.ndarray], Tensor] = lambda x: TF.to_tensor(x),
+        num_workers: int = 0,
     ):
         super().__init__()
         self.data_dir = data_dir
         self.transform = transform
         self.clip_len = clip_len
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
     def setup(self, stage: str):
         dataset = VideoDataset(self.data_dir, self.clip_len, self.transform)
@@ -83,10 +85,16 @@ class VideoDataModule(pl.LightningDataModule):
         self.datasets = random_split(dataset, [fit_len, val_len, tst_len])
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.datasets[0], batch_size=self.batch_size)
+        return DataLoader(
+            self.datasets[0], batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.datasets[1], batch_size=self.batch_size)
+        return DataLoader(
+            self.datasets[1], batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.datasets[2], batch_size=self.batch_size)
+        return DataLoader(
+            self.datasets[2], batch_size=self.batch_size, num_workers=self.num_workers
+        )

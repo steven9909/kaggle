@@ -39,6 +39,7 @@ class Model(pl.LightningModule):
         n_enc_layers: int,
         n_dec_layers: int,
         seq_len: int,
+        clip_len: int,
     ):
 
         super().__init__()
@@ -56,6 +57,7 @@ class Model(pl.LightningModule):
             patch_size=patch_size,
             in_channels=in_channels,
             image_size=image_size,
+            clip_len=clip_len,
         )
         self.loss = nn.MSELoss()
 
@@ -105,7 +107,9 @@ class Model(pl.LightningModule):
         Configure optimizers
         """
 
-        return optim.Adam(self.parameters(), lr=0.002)
+        return optim.Adam(
+            self.parameters(), lr=0.001, betas=[0.9, 0.999], weight_decay=0.1
+        )
 
     def training_step(self, batch: List[Tensor], _):
         """
