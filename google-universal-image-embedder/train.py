@@ -34,8 +34,14 @@ def main(config: DictConfig):
         config.clip_len * (image_size // patch_size) ** 2,
         config.clip_len,
     )
-    trainer = pl.Trainer(max_epochs=100, accelerator="gpu")
-    trainer.fit(model, data_module)
+    trainer = pl.Trainer(
+        default_root_dir=config.checkpoint_dir, max_epochs=100, accelerator="gpu"
+    )
+    trainer.fit(
+        model,
+        data_module,
+        ckpt_path=config.checkpoint_dir if config.use_checkpoints else None,
+    )
 
 
 if __name__ == "__main__":

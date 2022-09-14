@@ -12,5 +12,7 @@ normalize:
   mean: [0.5, 0.5, 0.5]
   std: [0.5, 0.5, 0.5]
 db_loc: "db.json"
-dataset_time: 120
+checkpoint_dir: "checkpoints/"
+use_checkpoints: True
+dataset_time: 480
 fetch_urls: False

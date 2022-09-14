@@ -1,12 +1,12 @@
 from dataset.utils import VideoURLFetcher, VideoDownloadManager
 import hydra
 from omegaconf import DictConfig
-from tinydb import TinyDB
+from dataset.database import ConcurrentDatabase
 
 
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
-    db = TinyDB(config.db_loc)
+    db = ConcurrentDatabase(config.db_loc)
     if config.fetch_urls:
         fetcher = VideoURLFetcher(db, config.dataset_time)
         fetcher.fetch_urls()

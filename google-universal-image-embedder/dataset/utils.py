@@ -7,6 +7,7 @@ from urllib.error import HTTPError
 from pytube import Search, YouTube
 from tinydb import Query, TinyDB
 from tinydb.table import Document
+from dataset.database import ConcurrentDatabase
 
 categories = {
     "apparel & accessories": 0.2,
@@ -24,13 +25,11 @@ categories = {
 
 
 class VideoDownloadManager:
-    def __init__(self, db: TinyDB, download_dir: Path):
-
+    def __init__(self, db: ConcurrentDatabase, download_dir: Path):
         self.db = db
         self.download_dir = download_dir
 
     def create_download_jobs(self):
-
         query = Query()
 
         with ThreadPoolExecutor() as executor:
@@ -43,7 +42,6 @@ class VideoDownloadManager:
             executor.shutdown(True)
 
     def download_job(self, category: str, videos: List[Document]):
-
         downloader = _VideoDownloader(self.db, self.download_dir)
 
         for video in videos:
@@ -54,7 +52,7 @@ class _VideoDownloader:
 
     YOUTUBE_LINK = "https://youtu.be/"
 
-    def __init__(self, db: TinyDB, download_dir: str):
+    def __init__(self, db: ConcurrentDatabase, download_dir: str):
         self.db = db
         self.download_dir = download_dir
 
@@ -85,7 +83,7 @@ class _VideoDownloader:
 
 
 class VideoURLFetcher:
-    def __init__(self, database: TinyDB, total_time_mins=10):
+    def __init__(self, database: ConcurrentDatabase, total_time_mins=10):
         self.db = database
         self.total_time = total_time_mins * 60
 
@@ -131,13 +129,3 @@ class VideoURLFetcher:
 
                 if (results := s.results) is None:
                     break
-
-
-if __name__ == "__main__":
-    db = TinyDB("db.json")
-
-    fetcher = VideoURLFetcher(db)
-    fetcher.fetch_urls()
-
-    manager = VideoDownloadManager(db, Path("videos"))
-    manager.create_download_jobs()
