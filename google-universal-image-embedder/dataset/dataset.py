@@ -18,11 +18,12 @@ class ImageFolder(data.Dataset):
         self.samples = list(data_dir.glob("*.png"))
         self.transform = T.ToTensor() if transform is None else transform
 
-    def __getitem__(self, index) -> Tensor:
+    def __getitem__(self, index: int) -> Tensor:
 
         return self.transform(Image.open(self.samples[index]))
 
     def __len__(self) -> int:
+
         return len(self.samples)
 
 
@@ -47,8 +48,8 @@ class Dataset(pl.LightningDataModule):
 
         dataset = ImageFolder(self.data_dir, self.transform)
 
-        fit_len = 0.8 * len(dataset)
-        val_len = 0.1 * len(dataset)
+        fit_len = int(0.8 * len(dataset))
+        val_len = int(0.1 * len(dataset))
         tst_len = len(dataset) - fit_len - val_len
 
         self.datasets = data.random_split(dataset, [fit_len, val_len, tst_len])
