@@ -1,2 +1,6 @@
 venv/
 .vscode/
+data/
+__pycache__/
+lightning_logs/
+outputs/

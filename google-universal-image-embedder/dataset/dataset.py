@@ -15,12 +15,12 @@ class ImageFolder(data.Dataset):
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
 
-        self.samples = list(data_dir.glob("*.png"))
+        self.samples = list(data_dir.glob("*.jpeg"))
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tensor:
 
-        return self.transform(Image.open(self.samples[index]))
+        return self.transform(Image.open(self.samples[index]).convert("RGB"))
 
     def __len__(self) -> int:
 
