@@ -1,13 +1,14 @@
-from torchvision import models
-from torch import nn
+from typing import Tuple
+
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from torch import optim
-from torch import no_grad
+from torch import Tensor, nn, no_grad, optim
+from torchvision import models
 
 
 class AutoEncoder(nn.Module):
     def __init__(self):
+
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Linear(1024, 512),
@@ -30,30 +31,32 @@ class AutoEncoder(nn.Module):
             nn.GELU(),
         )
 
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+    def forward(self, x: Tensor) -> Tensor:
+
+        return self.decoder(self.encoder(x))
 
 
 class Model(pl.LightningModule):
     def __init__(self):
-        super().__init__()
-        self.model = models.vit_l_16(weights=models.ViT_L_16_Weights)
-        self.model.heads = nn.Identity()
 
+        super().__init__()
+        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
+        self.vit.heads = nn.Identity()
         self.autoencoder = AutoEncoder()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+
         with no_grad():
-            y = self.model(x)
+            y = self.vit(x)
+
         y_hat = self.autoencoder(y)
-        return y_hat, y
 
-    def training_step(self, batch, batch_idx):
-        y_hat, y = self(batch)
-        loss = F.mse_loss(y_hat, y)
-        return loss
+        return y, y_hat
 
-    def configure_optimizers(self):
+    def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
+
+        return F.mse_loss(*self.forward(batch))
+
+    def configure_optimizers(self) -> optim.Optimizer:
+
         return optim.Adam(self.parameters(), lr=0.001)

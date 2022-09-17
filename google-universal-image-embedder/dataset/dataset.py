@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Callable, Optional
+
 import pytorch_lightning as pl
-from torch.utils import data
-from torch import Tensor
 from PIL import Image
+from torch import Tensor
+from torch.utils import data
 from torchvision import transforms as T
 
 
