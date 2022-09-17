@@ -6,8 +6,8 @@ from torchvision import transforms as T
 
 from dataset import VideoDataModule
 from model import Model
+from torchvision import transforms as T
 
-import os
 from pathlib import Path
 
 
@@ -32,7 +32,6 @@ def main(config: DictConfig):
         max_version_num = -1
         checkpoint_dir = checkpoint_dir / "lightning_logs"
         for file in checkpoint_dir.iterdir():
-            print(file)
             if file.is_dir():
                 max_version_num = max(max_version_num, int(file.stem.split("_")[-1]))
 
@@ -52,10 +51,7 @@ def main(config: DictConfig):
         config.d_token,
         config.n_enc_layers,
         config.n_dec_layers,
-<<<<<<< HEAD
         config.clip_len * n_patchs_per_frame,
-=======
-        config.clip_len * (image_size // patch_size) ** 2,
         config.clip_len,
     )
     trainer = pl.Trainer(
@@ -65,7 +61,6 @@ def main(config: DictConfig):
         resume_from_checkpoint=get_latest_checkpoint(Path(config.checkpoint_dir))
         if config.use_checkpoints
         else None,
->>>>>>> 0e4064bd49d1047d61c90f93a81ad0b3a88ea7d8
     )
     trainer.fit(model, data_module)
 
