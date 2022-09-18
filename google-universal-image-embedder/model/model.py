@@ -18,7 +18,7 @@ class EncoderBlock(nn.Module):
         )
         self.last = nn.Linear(in_features, out_features)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
 
         return self.last(self.linears(x))
 
@@ -34,6 +34,10 @@ class DecoderBlock:
                 for _ in range(n - 1)
             ]
         )
+
+    def forward(self, x: Tensor) -> Tensor:
+
+        return self.linears(self.first(x))
 
 
 class AutoEncoder(nn.Module):
