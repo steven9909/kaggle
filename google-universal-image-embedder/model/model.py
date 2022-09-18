@@ -6,12 +6,24 @@ from torch import Tensor, nn, no_grad, optim
 from torchvision import models
 
 
-class LinearBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, is_last: bool = False):
+class EncoderLinearBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int):
 
         super().__init__()
         self.linear1 = nn.Linear(in_channels, in_channels)
         self.linear2 = nn.Linear(in_channels, out_channels)
+
+    def forward(self, x):
+
+        return F.gelu(self.linear2(F.gelu(self.linear1(x))))
+
+
+class DecoderLinearBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, is_last: bool = False):
+
+        super().__init__()
+        self.linear1 = nn.Linear(in_channels, out_channels)
+        self.linear2 = nn.Linear(out_channels, out_channels)
 
         self.is_last = is_last
 
@@ -26,16 +38,16 @@ class AutoEncoder(nn.Module):
 
         super().__init__()
         self.encoder = nn.Sequential(
-            LinearBlock(1024, 512),
-            LinearBlock(512, 256),
-            LinearBlock(256, 128),
-            LinearBlock(128, 64),
+            EncoderLinearBlock(1024, 512),
+            EncoderLinearBlock(512, 256),
+            EncoderLinearBlock(256, 128),
+            EncoderLinearBlock(128, 64),
         )
         self.decoder = nn.Sequential(
-            LinearBlock(64, 128),
-            LinearBlock(128, 256),
-            LinearBlock(256, 512),
-            LinearBlock(512, 1024, is_last=True),
+            DecoderLinearBlock(64, 128),
+            DecoderLinearBlock(128, 256),
+            DecoderLinearBlock(256, 512),
+            DecoderLinearBlock(512, 1024, is_last=True),
         )
 
     def forward(self, x: Tensor) -> Tensor:
