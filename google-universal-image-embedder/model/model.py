@@ -13,9 +13,6 @@ class EncoderStack(nn.Module):
 
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(in_features, out_features),
-            nn.BatchNorm1d(out_features),
-            nn.GELU(),
             *[
                 nn.Sequential(
                     nn.Linear(in_features, in_features),
@@ -24,6 +21,9 @@ class EncoderStack(nn.Module):
                 )
                 for _ in range(n - 1)
             ],
+            nn.Linear(in_features, out_features),
+            nn.BatchNorm1d(out_features),
+            nn.GELU(),
         )
 
     def forward(self, x: Tensor) -> Tensor:
