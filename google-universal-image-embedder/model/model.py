@@ -23,7 +23,7 @@ class EncoderBlock(nn.Module):
         return self.last(self.linears(x))
 
 
-class DecoderBlock:
+class DecoderBlock(nn.Module):
     def __init__(self, in_features: int, out_features: int, n: int):
 
         super().__init__()
@@ -41,7 +41,7 @@ class DecoderBlock:
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, encoder_size: int = 2, decoder_size: int = 2):
+    def __init__(self, encoder_size: int = 1, decoder_size: int = 1):
 
         super().__init__()
         self.encoder = nn.Sequential(
