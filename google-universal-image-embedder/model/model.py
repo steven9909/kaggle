@@ -6,36 +6,58 @@ from torch import Tensor, nn, no_grad, optim
 from torchvision import models
 
 
-class LinearBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, is_last: bool = False):
+class EncoderBlock(nn.Module):
+    def __init__(self, in_features: int, out_features: int, n: int):
 
         super().__init__()
-        self.linear1 = nn.Linear(in_channels, in_channels)
-        self.linear2 = nn.Linear(in_channels, out_channels)
-
-        self.is_last = is_last
+        self.linears = nn.Sequential(
+            *[
+                nn.Sequential(nn.Linear(in_features, in_features), nn.GELU())
+                for _ in range(n - 1)
+            ]
+        )
+        self.last = nn.Linear(in_features, out_features)
 
     def forward(self, x):
 
-        x = F.gelu(self.linear1(x))
-        return self.linear2(x) if self.is_last else F.gelu(self.linear2(x))
+        return self.last(self.linears(x))
+
+
+class DecoderBlock:
+    def __init__(self, in_features: int, out_features: int, n: int):
+
+        super().__init__()
+        self.first = nn.Linear(in_features, out_features)
+        self.linears = nn.Sequential(
+            *[
+                nn.Sequential(nn.GELU(), nn.Linear(out_features, out_features))
+                for _ in range(n - 1)
+            ]
+        )
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, encoder_size: int = 2, decoder_size: int = 2):
 
         super().__init__()
         self.encoder = nn.Sequential(
-            LinearBlock(1024, 512),
-            LinearBlock(512, 256),
-            LinearBlock(256, 128),
-            LinearBlock(128, 64),
+            EncoderBlock(1024, 512, encoder_size),
+            nn.GELU(),
+            EncoderBlock(512, 256, encoder_size),
+            nn.GELU(),
+            EncoderBlock(256, 128, encoder_size),
+            nn.GELU(),
+            EncoderBlock(128, 64, encoder_size),
+            nn.GELU(),
         )
         self.decoder = nn.Sequential(
-            LinearBlock(64, 128),
-            LinearBlock(128, 256),
-            LinearBlock(256, 512),
-            LinearBlock(512, 1024, is_last=True),
+            DecoderBlock(64, 128, decoder_size),
+            nn.GELU(),
+            DecoderBlock(128, 256, decoder_size),
+            nn.GELU(),
+            DecoderBlock(256, 512, decoder_size),
+            nn.GELU(),
+            DecoderBlock(512, 1024, decoder_size),
         )
 
     def forward(self, x: Tensor) -> Tensor:
