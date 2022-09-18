@@ -26,7 +26,7 @@ def get_conversion_fn() -> Callable[[Path], np.ndarray]:
 
     def conversion_fn(sample: Path) -> np.ndarray:
         with no_grad():
-            return vit(transform(Image.open(sample).unsqueeze(0))).numpy()
+            return vit(transform(Image.open(sample)).unsqueeze(0)).numpy()
 
     return conversion_fn
 

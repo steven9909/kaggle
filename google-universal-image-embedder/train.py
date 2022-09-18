@@ -1,17 +1,13 @@
+import os
 from pathlib import Path
+
 import hydra
 import pytorch_lightning as pl
 from omegaconf import DictConfig
-
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from dataset.dataset import ImageDataset
-
+from dataset import ImageDataset
 from model.model import Model
-
-from pathlib import Path
-
-import os
 
 
 @hydra.main(".", "config.yaml", None)

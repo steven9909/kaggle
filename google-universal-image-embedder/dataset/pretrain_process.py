@@ -1,17 +1,16 @@
+import random
+import string
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Lock, RLock
+from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from threading import local
-from torchvision.models import VisionTransformer
-from typing import Iterator, Optional, Callable
-from torch import Tensor
-from PIL import Image
+
 import torch
+from torch import Tensor
+from torchvision.models import VisionTransformer
+
 from dataset.dataset import ImageDataset
-import string
-import random
-from datetime import datetime
-from copy import deepcopy
 
 
 class PretrainLoader:
