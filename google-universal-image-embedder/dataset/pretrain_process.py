@@ -18,7 +18,7 @@ class PretrainLoader:
         image_dir: Path,
         save_dir: Path,
         pretrained_model: VisionTransformer,
-        num_threads: int = 0,
+        num_threads: int = 10,
     ):
         self.model = pretrained_model
         self.model.eval()
