@@ -11,7 +11,7 @@ from torchvision.transforms import functional as TF
 def main(config: DictConfig):
 
     model = Model()
-    model.load_from_checkpoint(config.test)
+    model.load_from_checkpoint(os.getcwd() / Path(config.checkpoint_dir) / "last.ckpt")
 
     data = Dataset(os.getcwd() / Path(config.data_dir), batch_size=1)
     data.setup("")
