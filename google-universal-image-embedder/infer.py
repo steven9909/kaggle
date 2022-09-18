@@ -12,6 +12,7 @@ def main(config: DictConfig):
 
     model = Model()
     model.load_from_checkpoint(os.getcwd() / Path(config.checkpoint_dir) / "last.ckpt")
+    model.eval()
 
     data = Dataset(os.getcwd() / Path(config.data_dir), batch_size=1)
     data.setup("")
