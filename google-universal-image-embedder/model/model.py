@@ -81,7 +81,10 @@ class AutoEncoder(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
 
-        return self.head(self.decoder(self.encoder(x)))
+        if self.training:
+            return self.head(self.decoder(self.encoder(x)))
+
+        return self.encoder(x)
 
 
 class Model(pl.LightningModule):
@@ -94,12 +97,14 @@ class Model(pl.LightningModule):
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
 
+        if self.training:
+            with no_grad():
+                y = self.vit(x)
+
+            return y, self.autoencoder(y)
+
         with no_grad():
-            y = self.vit(x)
-
-        y_hat = self.autoencoder(y)
-
-        return y, y_hat
+            return self.autoencoder(self.vit(x))
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
 
@@ -111,7 +116,3 @@ class Model(pl.LightningModule):
     def configure_optimizers(self) -> optim.Optimizer:
 
         return optim.Adam(self.parameters(), lr=0.0005)
-
-
-if __name__ == "__main__":
-    print(AutoEncoder(2, 2))
