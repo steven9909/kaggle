@@ -33,7 +33,7 @@ def main(config: DictConfig):
     ckpt_path = ckpt_path / "last.ckpt" if config.load_from_checkpoint else None
 
     model = Model()
-    trainer = pl.Trainer(max_epochs=10, accelerator="gpu", callbacks=[checkpoint])
+    trainer = pl.Trainer(max_epochs=50, accelerator="gpu", callbacks=[checkpoint])
     trainer.fit(model, data_module, ckpt_path=ckpt_path)
 
 

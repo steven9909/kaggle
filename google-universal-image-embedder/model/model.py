@@ -12,15 +12,20 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.linears = nn.Sequential(
             *[
-                nn.Sequential(nn.Linear(in_features, in_features), nn.GELU())
+                nn.Sequential(
+                    nn.Linear(in_features, in_features),
+                    nn.BatchNorm1d(in_features),
+                    nn.GELU(),
+                )
                 for _ in range(n - 1)
             ]
         )
         self.last = nn.Linear(in_features, out_features)
+        self.last_norm = nn.BatchNorm1d(out_features)
 
     def forward(self, x: Tensor) -> Tensor:
 
-        return self.last(self.linears(x))
+        return self.last_norm(self.last(self.linears(x)))
 
 
 class DecoderBlock(nn.Module):
@@ -30,7 +35,11 @@ class DecoderBlock(nn.Module):
         self.first = nn.Linear(in_features, out_features)
         self.linears = nn.Sequential(
             *[
-                nn.Sequential(nn.GELU(), nn.Linear(out_features, out_features))
+                nn.Sequential(
+                    nn.BatchNorm1d(out_features),
+                    nn.GELU(),
+                    nn.Linear(out_features, out_features),
+                )
                 for _ in range(n - 1)
             ]
         )
@@ -41,7 +50,7 @@ class DecoderBlock(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, encoder_size: int = 1, decoder_size: int = 1):
+    def __init__(self, encoder_size: int = 2, decoder_size: int = 2):
 
         super().__init__()
         self.encoder = nn.Sequential(
@@ -56,10 +65,13 @@ class AutoEncoder(nn.Module):
         )
         self.decoder = nn.Sequential(
             DecoderBlock(64, 128, decoder_size),
+            nn.BatchNorm1d(128),
             nn.GELU(),
             DecoderBlock(128, 256, decoder_size),
+            nn.BatchNorm1d(256),
             nn.GELU(),
             DecoderBlock(256, 512, decoder_size),
+            nn.BatchNorm1d(512),
             nn.GELU(),
             DecoderBlock(512, 1024, decoder_size),
         )
@@ -93,4 +105,4 @@ class Model(pl.LightningModule):
 
     def configure_optimizers(self) -> optim.Optimizer:
 
-        return optim.Adam(self.parameters(), lr=0.001)
+        return optim.Adam(self.parameters(), lr=0.0005)
