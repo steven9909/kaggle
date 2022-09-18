@@ -23,7 +23,6 @@ class PretrainLoader:
         num_threads: int = 10,
     ):
         self.model = pretrained_model
-        self.model.eval()
         self.save_dir = save_dir
         self.dataset = Dataset(image_dir, batch_size=1)
         self.num_threads = num_threads
