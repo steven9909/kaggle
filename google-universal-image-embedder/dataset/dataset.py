@@ -27,7 +27,16 @@ class ImageFolder(data.Dataset):
         return len(self.samples)
 
 
-class Dataset(pl.LightningDataModule):
+class BinaryFolder(data.Dataset):
+    def __init__(
+        self,
+        src_dir: Path,
+        dst_dir: Path,
+    ):
+        pass
+
+
+class ImageDataset(pl.LightningDataModule):
     def __init__(self, data_dir: Path, batch_size: int = 64, num_workers: int = 0):
 
         super().__init__()

@@ -5,7 +5,7 @@ from omegaconf import DictConfig
 
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from dataset.dataset import Dataset
+from dataset.dataset import ImageDataset
 
 from model.model import Model
 
@@ -17,7 +17,7 @@ import os
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    data_module = Dataset(
+    data_module = ImageDataset(
         os.getcwd() / Path(config.data_dir), batch_size=256, num_workers=10
     )
 

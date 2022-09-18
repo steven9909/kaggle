@@ -7,7 +7,7 @@ from typing import Iterator, Optional, Callable
 from torch import Tensor
 from PIL import Image
 import torch
-from dataset.dataset import Dataset
+from dataset.dataset import ImageDataset
 import string
 import random
 from datetime import datetime
@@ -24,7 +24,7 @@ class PretrainLoader:
     ):
         self.model = pretrained_model
         self.save_dir = save_dir
-        self.dataset = Dataset(image_dir, batch_size=1)
+        self.dataset = ImageDataset(image_dir, batch_size=1)
         self.num_threads = num_threads
         random.seed(datetime.now())
 
