@@ -1,17 +1,16 @@
+import random
+import string
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Lock, RLock
+from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from threading import local
-from torchvision.models import VisionTransformer
-from typing import Iterator, Optional, Callable
-from torch import Tensor
-from PIL import Image
+
 import torch
-from dataset.dataset import Dataset
-import string
-import random
-from datetime import datetime
-from copy import deepcopy
+from torch import Tensor
+from torchvision.models import VisionTransformer
+
+from dataset.dataset import ImageDataset
 
 
 class PretrainLoader:
@@ -24,7 +23,7 @@ class PretrainLoader:
     ):
         self.model = pretrained_model
         self.save_dir = save_dir
-        self.dataset = Dataset(image_dir, batch_size=1)
+        self.dataset = ImageDataset(image_dir, batch_size=1)
         self.num_threads = num_threads
         random.seed(datetime.now())
 
