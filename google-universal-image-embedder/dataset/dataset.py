@@ -8,6 +8,7 @@ from PIL import Image
 from torch import Tensor, from_numpy
 from torch.utils import data
 from torchvision import transforms as T
+from uuid import uuid4
 
 
 class ImageFolder(data.Dataset):
@@ -35,11 +36,11 @@ class NumpyFolder(data.Dataset):
         data_dir: Path,
     ):
 
-        self.samples = list(data_dir.glob("*.bin"))
+        self.samples = list(data_dir.glob("*.npy"))
 
     def __getitem__(self, index: int) -> Tensor:
 
-        return from_numpy(np.load(self.samples[index]))
+        return from_numpy(np.load(self.samples[index])).squeeze(0)
 
     def __len__(self) -> int:
 
@@ -56,10 +57,10 @@ class NumpyFolder(data.Dataset):
         dst_dir.mkdir(parents=True, exist_ok=True)
 
         with ThreadPoolExecutor(max_workers) as executor:
-            for sample in src_dir.glob("*.jpeg"):
+            for sample in src_dir.glob("*.JPEG"):
                 future = executor.submit(conversion_fn, sample)
                 future.add_done_callback(
-                    lambda x: np.save(dst_dir / sample.stem, x.result())
+                    lambda x: np.save(dst_dir / str(uuid4()), x.result())
                 )
 
             executor.shutdown(True)

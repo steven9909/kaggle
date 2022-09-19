@@ -91,17 +91,19 @@ class Model(pl.LightningModule):
     def __init__(self):
 
         super().__init__()
-        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
-        self.vit.heads = nn.Identity()
+        # self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
+        # self.vit.heads = nn.Identity()
         self.autoencoder = AutoEncoder()
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
 
         if self.training:
-            with no_grad():
-                y = self.vit(x)
+            # with no_grad():
+            #     y = self.vit(x)
 
-            return y, self.autoencoder(y)
+            # return y, self.autoencoder(y)
+
+            return x, self.autoencoder(x)
 
         with no_grad():
             return self.autoencoder(self.vit(x))

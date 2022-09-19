@@ -1,3 +1,3 @@
-data_dir: "data/"
+data_dir: "data/numpynet_test"
 checkpoint_dir: "checkpoint/"
 load_from_checkpoint: False

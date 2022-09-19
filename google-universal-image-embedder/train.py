@@ -6,14 +6,14 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from dataset import ImageDataset
+from dataset import ImageDataset, NumpyDataset
 from model.model import Model
 
 
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    data_module = ImageDataset(
+    data_module = NumpyDataset(
         os.getcwd() / Path(config.data_dir), batch_size=256, num_workers=10
     )
 
@@ -29,7 +29,7 @@ def main(config: DictConfig):
     ckpt_path = ckpt_path / "last.ckpt" if config.load_from_checkpoint else None
 
     model = Model()
-    trainer = pl.Trainer(max_epochs=50, accelerator="gpu", callbacks=[checkpoint])
+    trainer = pl.Trainer(max_epochs=50, accelerator="mps", callbacks=[checkpoint])
     trainer.fit(model, data_module, ckpt_path=ckpt_path)
 
 
