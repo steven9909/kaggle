@@ -23,13 +23,23 @@ def get_conversion_fn() -> Callable[[Path], np.ndarray]:
 
     vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
     vit.heads = nn.Identity()
+    vit = vit.eval()
 
     def conversion_fn(sample: Path) -> np.ndarray:
         with no_grad():
-            return vit(transform(Image.open(sample)).unsqueeze(0)).numpy()
+            return (
+                vit(transform(Image.open(sample).convert("RGB")).unsqueeze(0))
+                .squeeze(0)
+                .numpy(),
+            )
 
     return conversion_fn
 
 
 if __name__ == "__main__":
-    NumpyFolder.convert_from_image(Path(""), Path(""), get_conversion_fn())
+    NumpyFolder.convert_from_image(
+        Path("data/imagenet_test"),
+        Path("data/numpynet_test"),
+        get_conversion_fn(),
+        max_workers=16,
+    )
