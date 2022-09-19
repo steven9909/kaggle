@@ -102,7 +102,7 @@ class Model(pl.LightningModule):
 
     def configure_optimizers(self) -> optim.Optimizer:
 
-        return optim.Adam(self.parameters(), lr=0.0005)
+        return optim.Adam(self.parameters(), lr=0.0008)
 
 
 if __name__ == "__main__":

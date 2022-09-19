@@ -25,7 +25,7 @@ def main(config: DictConfig):
 
     checkpoint = ModelCheckpoint(
         dirpath=ckpt_path,
-        save_top_k=2,
+        save_top_k=-1,
         monitor="loss",
         save_last=True,
     )
