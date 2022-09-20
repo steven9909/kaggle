@@ -13,8 +13,14 @@ from model.model import Model
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    data_module = NumpyDataset(
-        os.getcwd() / Path(config.data_dir), batch_size=256, num_workers=10
+    data_module = (
+        NumpyDataset(
+            os.getcwd() / Path(config.data_dir), batch_size=256, num_workers=10
+        )
+        if config.use_np_dataset
+        else ImageDataset(
+            os.getcwd() / Path(config.data_dir), batch_size=256, num_workers=10
+        )
     )
 
     ckpt_path = os.getcwd() / Path(config.checkpoint_dir)
@@ -28,8 +34,8 @@ def main(config: DictConfig):
 
     ckpt_path = ckpt_path / "last.ckpt" if config.load_from_checkpoint else None
 
-    model = Model()
-    trainer = pl.Trainer(max_epochs=50, accelerator="mps", callbacks=[checkpoint])
+    model = Model(config.use_np_dataset)
+    trainer = pl.Trainer(max_epochs=50, accelerator="gpu", callbacks=[checkpoint])
     trainer.fit(model, data_module, ckpt_path=ckpt_path)
 
 

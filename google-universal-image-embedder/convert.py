@@ -38,8 +38,8 @@ def get_conversion_fn() -> Callable[[Path], np.ndarray]:
 
 if __name__ == "__main__":
     NumpyFolder.convert_from_image(
-        Path("data/imagenet_test"),
-        Path("data/numpynet_test"),
+        Path("data/"),
+        Path("data_numpy/"),
         get_conversion_fn(),
         max_workers=16,
     )

@@ -62,7 +62,7 @@ class DecoderStack(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, encoder_size: int = 1, decoder_size: int = 1):
+    def __init__(self, encoder_size: int = 2, decoder_size: int = 2):
 
         super().__init__()
         self.encoder = nn.Sequential(
@@ -88,41 +88,33 @@ class AutoEncoder(nn.Module):
 
 
 class Model(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, using_np_dataset: bool):
 
         super().__init__()
-        # self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
-        # self.vit.heads = nn.Identity()
+        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
+        self.vit.heads = nn.Identity()
         self.autoencoder = AutoEncoder()
+        self.using_np_dataset = using_np_dataset
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
 
         if self.training:
-            # with no_grad():
-            #     y = self.vit(x)
+            with no_grad():
+                if not self.using_np_dataset:
+                    y = self.vit(x)
+                else:
+                    y = x
 
-            # return y, self.autoencoder(y)
+            return y, self.autoencoder(y)
 
-            return x, self.autoencoder(x)
-
-        with no_grad():
-            return self.autoencoder(self.vit(x))
+        return self.autoencoder(self.vit(x))
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
-
         y, y_hat = self.forward(batch)
         loss = F.mse_loss(y_hat, y)
-
+        self.log("loss", loss)
         return loss
 
     def configure_optimizers(self) -> optim.Optimizer:
 
-<<<<<<< HEAD
-        return optim.Adam(self.parameters(), lr=0.0008)
-
-
-if __name__ == "__main__":
-    print(AutoEncoder(2, 2))
-=======
         return optim.Adam(self.parameters(), lr=0.0005)
->>>>>>> 575283f139531c39e0105efbd0377c5770063c92

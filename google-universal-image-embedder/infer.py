@@ -11,7 +11,7 @@ from model.model import Model
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    model = Model()
+    model = Model(config.use_np_dataset)
     model.load_from_checkpoint(os.getcwd() / Path(config.checkpoint_dir) / "last.ckpt")
     model.eval()
 
