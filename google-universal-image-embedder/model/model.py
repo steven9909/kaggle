@@ -93,7 +93,7 @@ class Model(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         if not self.hparams.using_np_dataset:
-            self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
+            self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights.DEFAULT)
             self.vit.heads = nn.Identity()
         self.autoencoder = AutoEncoder()
 
