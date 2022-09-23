@@ -7,12 +7,15 @@ from omegaconf import DictConfig
 from dataset import NumpyDataset, ImageDataset
 from model.model import Model
 
+import torch.nn.functional as F
+
 
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    model = Model(config.use_np_dataset)
-    model.load_from_checkpoint(os.getcwd() / Path(config.checkpoint_dir) / "last.ckpt")
+    model = Model.load_from_checkpoint(
+        os.getcwd() / Path(config.checkpoint_dir) / "last-v3.ckpt"
+    )
     model.eval()
     data = (
         NumpyDataset(os.getcwd() / Path(config.data_dir), batch_size=1)
@@ -24,6 +27,7 @@ def main(config: DictConfig):
         y, y_hat = model.forward(d)
         print(d)
         print(y_hat)
+        print(F.mse_loss(y_hat, d))
         break
 
 

@@ -13,7 +13,7 @@ class Linear(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(in_features, out_features),
             nn.BatchNorm1d(out_features),
-            nn.GELU(),
+            nn.Tanh(),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -66,16 +66,16 @@ class AutoEncoder(nn.Module):
 
         super().__init__()
         self.encoder = nn.Sequential(
-            EncoderStack(1024, 1024, encoder_size),
-            # EncoderStack(512, 256, encoder_size),
-            # EncoderStack(256, 128, encoder_size),
-            # EncoderStack(128, 64, encoder_size),
+            EncoderStack(1024, 512, encoder_size),
+            EncoderStack(512, 256, encoder_size),
+            EncoderStack(256, 128, encoder_size),
+            EncoderStack(128, 64, encoder_size),
         )
         self.decoder = nn.Sequential(
-            # DecoderStack(64, 128, decoder_size),
-            # DecoderStack(128, 256, decoder_size),
-            # DecoderStack(256, 512, decoder_size),
-            DecoderStack(1024, 1024, decoder_size),
+            DecoderStack(64, 128, decoder_size),
+            DecoderStack(128, 256, decoder_size),
+            DecoderStack(256, 512, decoder_size),
+            DecoderStack(512, 1024, decoder_size),
         )
         self.head = nn.Linear(1024, 1024)
 
