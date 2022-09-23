@@ -66,16 +66,16 @@ class AutoEncoder(nn.Module):
 
         super().__init__()
         self.encoder = nn.Sequential(
-            EncoderStack(1024, 512, encoder_size),
-            EncoderStack(512, 256, encoder_size),
-            EncoderStack(256, 128, encoder_size),
-            EncoderStack(128, 64, encoder_size),
+            EncoderStack(1024, 1024, encoder_size),
+            # EncoderStack(512, 256, encoder_size),
+            # EncoderStack(256, 128, encoder_size),
+            # EncoderStack(128, 64, encoder_size),
         )
         self.decoder = nn.Sequential(
-            DecoderStack(64, 128, decoder_size),
-            DecoderStack(128, 256, decoder_size),
-            DecoderStack(256, 512, decoder_size),
-            DecoderStack(512, 1024, decoder_size),
+            # DecoderStack(64, 128, decoder_size),
+            # DecoderStack(128, 256, decoder_size),
+            # DecoderStack(256, 512, decoder_size),
+            DecoderStack(1024, 1024, decoder_size),
         )
         self.head = nn.Linear(1024, 1024)
 
@@ -83,31 +83,35 @@ class AutoEncoder(nn.Module):
 
         if self.training:
             return self.head(self.decoder(self.encoder(x)))
-
-        return self.encoder(x)
+        encoded = self.encoder(x)
+        return encoded, self.head(self.decoder(encoded))
 
 
 class Model(pl.LightningModule):
     def __init__(self, using_np_dataset: bool):
 
         super().__init__()
-        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
-        self.vit.heads = nn.Identity()
+        self.save_hyperparameters()
+        if not self.hparams.using_np_dataset:
+            self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights)
+            self.vit.heads = nn.Identity()
         self.autoencoder = AutoEncoder()
-        self.using_np_dataset = using_np_dataset
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
 
         if self.training:
             with no_grad():
-                if not self.using_np_dataset:
+                if not self.hparams.using_np_dataset:
                     y = self.vit(x)
                 else:
                     y = x
 
             return y, self.autoencoder(y)
 
-        return self.autoencoder(self.vit(x))
+        if not self.hparams.using_np_dataset:
+            return self.autoencoder(self.vit(x))
+        else:
+            return self.autoencoder(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
         y, y_hat = self.forward(batch)
