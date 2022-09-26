@@ -1,9 +1,8 @@
-from typing import Tuple
-
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from torch import Tensor, nn, no_grad, optim
+from torch import Tensor, nn, optim
 from torchvision import models
+from torchvision.transforms import functional as TF
 
 
 class Linear(nn.Module):
@@ -83,40 +82,48 @@ class AutoEncoder(nn.Module):
 
         if self.training:
             return self.head(self.decoder(self.encoder(x)))
-        encoded = self.encoder(x)
-        return encoded, self.head(self.decoder(encoded))
+
+        return self.encoder(x)
+
+
+class _Model(nn.Module):
+    def __init__(self):
+
+        super().__init__()
+        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights.DEFAULT)
+
+        for parameter in self.vit.parameters():
+            parameter.requires_grad = False
+
+        self.vit.heads = nn.Identity()
+        self.autoencoder = AutoEncoder()
+
+    def forward(self, x: Tensor) -> Tensor:
+
+        if self.training:
+            return self.autoencoder(x)
+
+        x = TF.resize(x, [224, 224])
+        x = x / 255
+        x = TF.normalize(x, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+        return self.autoencoder(self.vit(x))
 
 
 class Model(pl.LightningModule):
-    def __init__(self, using_np_dataset: bool):
+    def __init__(self):
 
         super().__init__()
-        self.save_hyperparameters()
-        if not self.hparams.using_np_dataset:
-            self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights.DEFAULT)
-            self.vit.heads = nn.Identity()
-        self.autoencoder = AutoEncoder()
+        self.model = _Model()
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, x: Tensor) -> Tensor:
 
-        if self.training:
-            with no_grad():
-                if not self.hparams.using_np_dataset:
-                    y = self.vit(x)
-                else:
-                    y = x
-
-            return y, self.autoencoder(y)
-
-        if not self.hparams.using_np_dataset:
-            return self.autoencoder(self.vit(x))
-        else:
-            return self.autoencoder(x)
+        return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
-        y, y_hat = self.forward(batch)
-        loss = F.mse_loss(y_hat, y)
-        self.log("loss", loss)
+
+        loss = F.mse_loss(self.forward(batch), batch)
+
         return loss
 
     def configure_optimizers(self) -> optim.Optimizer:

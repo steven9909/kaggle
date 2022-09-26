@@ -1,6 +1,7 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional
+from uuid import uuid4
 
 import numpy as np
 import pytorch_lightning as pl
@@ -8,7 +9,6 @@ from PIL import Image
 from torch import Tensor, from_numpy
 from torch.utils import data
 from torchvision import transforms as T
-from uuid import uuid4
 
 
 class ImageFolder(data.Dataset):
@@ -40,7 +40,7 @@ class NumpyFolder(data.Dataset):
 
     def __getitem__(self, index: int) -> Tensor:
 
-        return from_numpy(np.load(self.samples[index])).squeeze(0)
+        return from_numpy(np.load(self.samples[index]))
 
     def __len__(self) -> int:
 
@@ -50,18 +50,34 @@ class NumpyFolder(data.Dataset):
     def convert_from_image(
         src_dir: Path,
         dst_dir: Path,
-        conversion_fn: Callable[[Path], np.ndarray],
+        conversion_fn: Callable[[List[Path]], Tensor],
+        batch_size: int = 64,
         max_workers: int = 8,
     ):
 
         dst_dir.mkdir(parents=True, exist_ok=True)
 
+        def done_callback(x: Future[Tensor]):
+            x_ = x.result()
+
+            for i in range(batch_size):
+                np.save(dst_dir / f"{uuid4()}", x_[i].numpy())
+
         with ThreadPoolExecutor(max_workers) as executor:
+            samples = []
+
             for sample in src_dir.glob("*.JPEG"):
-                future = executor.submit(conversion_fn, sample)
-                future.add_done_callback(
-                    lambda x: np.save(dst_dir / str(uuid4()), x.result())
-                )
+                samples.append(sample)
+
+                if len(samples) == batch_size:
+                    future = executor.submit(conversion_fn, samples.copy())
+                    future.add_done_callback(done_callback)
+                    samples.clear()
+
+            if len(samples) > 0:
+                future = executor.submit(conversion_fn, samples.copy())
+                future.add_done_callback(done_callback)
+                samples.clear()
 
             executor.shutdown(True)
 

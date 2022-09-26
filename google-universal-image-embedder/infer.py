@@ -1,34 +1,26 @@
-import os
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig
-
-from dataset import NumpyDataset, ImageDataset
-from model.model import Model
-
 import torch.nn.functional as F
+from omegaconf import DictConfig
+from torch import stack
+
+from dataset.dataset import NumpyFolder
+from model import Model
 
 
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    model = Model.load_from_checkpoint(
-        os.getcwd() / Path(config.checkpoint_dir) / "last-v3.ckpt"
-    )
-    model.eval()
-    data = (
-        NumpyDataset(os.getcwd() / Path(config.data_dir), batch_size=1)
-        if config.use_np_dataset
-        else ImageDataset(os.getcwd() / Path(config.data_dir), batch_size=1)
-    )
-    data.setup("")
-    for d in data.train_dataloader():
-        y, y_hat = model.forward(d)
-        print(d)
-        print(y_hat)
-        print(F.mse_loss(y_hat, d))
-        break
+    model = Model.load_from_checkpoint(Path(config.checkpoint_dir, "last-v2.ckpt"))
+    dataset = NumpyFolder(Path(config.data_dir))
+
+    sample = dataset[1]
+
+    y_hat = model.forward(stack([sample, sample]))
+    print(sample)
+    print(y_hat[0])
+    print(F.mse_loss(y_hat, sample))
 
 
 if __name__ == "__main__":
