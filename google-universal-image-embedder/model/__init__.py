@@ -1,5 +1,5 @@
-from pathlib import Path
 import pickle
+from pathlib import Path
 
 import pytorch_lightning as pl
 import torch.nn.functional as F
@@ -68,20 +68,45 @@ class AutoEncoder(nn.Module):
     def __init__(self, encoder_size: int = 2, decoder_size: int = 2):
 
         super().__init__()
-        self.encoder = nn.Sequential(
-            EncoderStack(1024, 64, encoder_size),
+        self.encoder_layers = nn.ModuleList(
+            [
+                EncoderStack(1024, 512, encoder_size),
+                EncoderStack(512, 256, encoder_size),
+                EncoderStack(256, 128, encoder_size),
+                EncoderStack(128, 64, encoder_size),
+            ]
         )
-        self.decoder = nn.Sequential(
-            DecoderStack(64, 1024, decoder_size),
+        self.decoder_layers = nn.ModuleList(
+            [
+                DecoderStack(64, 128, decoder_size),
+                DecoderStack(128, 256, decoder_size),
+                DecoderStack(256, 512, decoder_size),
+                DecoderStack(512, 1024, decoder_size),
+            ]
         )
         self.head = nn.Linear(1024, 1024)
 
     def forward(self, x: Tensor) -> Tensor:
 
         if self.training:
-            return self.head(self.decoder(self.encoder(x)))
+            encoded = [x]
+            decoded = []
 
-        return self.encoder(x)
+            for encoder_layer in self.encoder_layers:
+                x = encoder_layer(x)
+                encoded.append(x)
+
+            for decoder_layer in self.decoder_layers:
+                x = decoder_layer(x)
+                decoded.append(x)
+
+            decoded[-1] = self.head(x)
+            return decoded[-1], encoded, decoded
+
+        for encoder_layer in self.encoder_layers:
+            x = encoder_layer(x)
+
+        return x
 
 
 class _Model(nn.Module):
@@ -119,8 +144,13 @@ class Model(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
-
-        loss = F.mse_loss(self.forward(batch), batch)
+        pred, int_enc, int_dec = self.forward(batch)
+        loss = sum(
+            [
+                F.mse_loss(enc_loss, dec_loss)
+                for enc_loss, dec_loss in zip(int_enc, reversed(int_dec))
+            ]
+        )
 
         return loss
 

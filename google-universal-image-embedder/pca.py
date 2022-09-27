@@ -2,8 +2,9 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-from sklearn.decomposition import PCA
 from rich.progress import track
+from sklearn.decomposition import PCA
+
 from model import PCAModel
 
 
