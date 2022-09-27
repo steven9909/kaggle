@@ -1,5 +1,9 @@
+from pathlib import Path
+import pickle
+
 import pytorch_lightning as pl
 import torch.nn.functional as F
+from sk2torch import wrap
 from torch import Tensor, nn, optim
 from torchvision import models
 from torchvision.transforms import functional as TF
@@ -65,16 +69,10 @@ class AutoEncoder(nn.Module):
 
         super().__init__()
         self.encoder = nn.Sequential(
-            EncoderStack(1024, 512, encoder_size),
-            EncoderStack(512, 256, encoder_size),
-            EncoderStack(256, 128, encoder_size),
-            EncoderStack(128, 64, encoder_size),
+            EncoderStack(1024, 64, encoder_size),
         )
         self.decoder = nn.Sequential(
-            DecoderStack(64, 128, decoder_size),
-            DecoderStack(128, 256, decoder_size),
-            DecoderStack(256, 512, decoder_size),
-            DecoderStack(512, 1024, decoder_size),
+            DecoderStack(64, 1024, decoder_size),
         )
         self.head = nn.Linear(1024, 1024)
 
@@ -129,3 +127,22 @@ class Model(pl.LightningModule):
     def configure_optimizers(self) -> optim.Optimizer:
 
         return optim.Adam(self.parameters(), lr=0.0005)
+
+
+class PCAModel(nn.Module):
+    def __init__(self, pca_model: Path):
+
+        super().__init__()
+        self.vit = models.vit_l_16(weights=models.ViT_L_16_Weights.DEFAULT)
+        self.vit.heads = nn.Identity()
+
+        with pca_model.open("rb") as f:
+            self.pca = wrap(pickle.load(f))
+
+    def forward(self, x: Tensor) -> Tensor:
+
+        x = TF.resize(x, [224, 224])
+        x = x / 255
+        x = TF.normalize(x, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+        return self.pca(self.vit(x))

@@ -4,24 +4,23 @@ import hydra
 from omegaconf import DictConfig
 from torch import jit
 
-from model import Model
+from model import PCAModel
 
 
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    model = Model.load_from_checkpoint(Path(config.checkpoint_dir, "last-v2.ckpt"))
-    m = jit.script(model.model)
+    model = PCAModel(Path("pca.pkl"))
+    m = jit.script(model)
     jit.save(m, "saved_model.pt")
+    m = jit.load("saved_model.pt")
 
     from PIL import Image
     from torchvision.transforms import functional as TF
 
-    m = jit.load("saved_model.pt")
-    m = m.eval()
+    model = PCAModel(Path("pca.pkl")).eval()
     image = Image.open("C:/Users/JBenn/Downloads/NebraskaImage_small.jpg")
-
-    print(m(TF.pil_to_tensor(image).unsqueeze(0)).shape)
+    print(model(TF.pil_to_tensor(image).unsqueeze(0)))
 
 
 if __name__ == "__main__":
