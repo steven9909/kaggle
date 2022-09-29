@@ -34,6 +34,31 @@ class SimCLRLoss(nn.Module):
         )
 
 
+class BYOLLoss(nn.Module):
+    def __init__(self, predictor):
+        super.__init__()
+        self.predictor = predictor
+
+    def forward(self, q1: Tensor, q2: Tensor, z1_p: Tensor, z2_p: Tensor) -> Tensor:
+        """
+        z1: batch of N augumented (t), predicted embeddings (online)
+        z2: batch of N augumented (t') predicted embeddings (online)
+        z1_p: batch of N augumented (t') projected embeddings (target)
+        z2_p: batch of N augumented (t) projected embeddings (target)
+        """
+        z1_p = z1_p.detach()
+        z2_p = z2_p.detach()
+
+        l_1 = torch.dot(q1, z1_p) / (
+            torch.norm(q1, dim=1, p=2) * torch.norm(z1_p, dim=1, p=2)
+        )
+        l_2 = torch.dot(q2, z2_p) / (
+            torch.norm(q2, dim=1, p=2) * torch.norm(z2_p, dim=1, p=2)
+        )
+
+        return torch.mean(l_1 + l_2)
+
+
 class VICRegLoss(nn.Module):
     def __init__(
         self,
