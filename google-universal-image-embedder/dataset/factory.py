@@ -70,7 +70,7 @@ class KaggleCompetition(Kaggle):
 
 class KaggleDataset(Kaggle):
     def __init__(self, dataset: str, data_dir: Path):
-        super().__init__(dataset, data_dir, kaggle.api.dataset_download_cli)
+        super().__init__(dataset, data_dir, "dataset")
 
 
 class IMaterialistFashion2021FGVC8(KaggleCompetition):
