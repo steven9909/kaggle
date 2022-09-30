@@ -81,6 +81,7 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
+
         super().__init__("stanford-cars-dataset", data_dir)
 
 
@@ -89,7 +90,8 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
         super().__init__("imaterialist-challenge-furniture-2018", data_dir)
 
-    def download_file(self, url: str, dir: Path):
+    def _download_file(self, url: str, dir: Path):
+
         if not dir.exists():
             dir.mkdir(parents=True)
 
