@@ -100,7 +100,7 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
 
-        super().__init__("stanford-cars-dataset", data_dir)
+        super().__init__("jessicali9530/stanford-cars-dataset", data_dir)
 
     def setup(self):
 
