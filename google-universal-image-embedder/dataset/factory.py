@@ -91,6 +91,16 @@ class DatasetFactory:
 
         return ToysDataset(data_dir)
 
+    @staticmethod
+    def get_artworks_dataset(data_dir: Path) -> "ArtWorksDataset":
+
+        return ArtWorksDataset(data_dir)
+
+    @staticmethod
+    def get_food_dataset(data_dir: Path) -> "FoodDataset":
+
+        return FoodDataset(data_dir)
+
 
 class Kaggle:
     download_cli_factory = {
@@ -157,13 +167,47 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
 
 
+class FoodDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("sainikhileshreddy/food-recognition-2022", data_dir)
+
+    def setup(self):
+
+        rglob2root(
+            self.raw_data_dir / "raw_data", self.raw_data_dir, Extension.JPG, True
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "visualize_dataset.png").unlink()
+        shutil.rmtree(self.raw_data_dir / "hub", ignore_errors=True)
+
+
+class ArtWorksDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("ikarus777/best-artworks-of-all-time", data_dir)
+
+    def setup(self):
+
+        rglob2root(
+            self.raw_data_dir / "resized", self.raw_data_dir, Extension.JPG, True
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "artists.csv").unlink()
+        shutil.rmtree(self.raw_data_dir / "images", ignore_errors=True)
+
+
 class ToysDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
         super().__init__("alejopaullier/guie-toys-dataset", data_dir)
 
     def setup(self):
 
-        rglob2root(self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG)
+        rglob2root(self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG, True)
 
     def clean(self):
 
@@ -177,8 +221,12 @@ class StanfordCarsDataset(KaggleDataset):
 
     def setup(self):
 
-        rglob2root(self.raw_data_dir / "cars_test/", self.raw_data_dir, Extension.JPG)
-        rglob2root(self.raw_data_dir / "cars_train/", self.raw_data_dir, Extension.JPG)
+        rglob2root(
+            self.raw_data_dir / "cars_test/", self.raw_data_dir, Extension.JPG, True
+        )
+        rglob2root(
+            self.raw_data_dir / "cars_train/", self.raw_data_dir, Extension.JPG, True
+        )
 
     def clean(self):
 
@@ -191,7 +239,7 @@ class ImageNetSketchDataset(KaggleDataset):
         super().__init__("wanghaohan/imagenetsketch", data_dir)
 
     def setup(self):
-        rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG, False)
+        rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG)
         pass
 
 
