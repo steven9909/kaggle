@@ -42,6 +42,17 @@ def download_files(urls: List[str], dir: Path):
         executor.shutdown(True)
 
 
+def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = False):
+    if glob.isdir():
+        return
+
+    for path in glob.rglob(f"*{extension}"):
+        path.rename(root / f"{uuid4()}{extension}")
+
+    if remove:
+        shutil.rmtree(glob)
+
+
 class DatasetFactory:
     @staticmethod
     def get_imaterialist_fashion_2021_fgvc8(
@@ -106,17 +117,6 @@ class Kaggle:
         raise NotImplementedError()
 
 
-def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = False):
-    if glob.isdir():
-        return
-
-    for path in glob.rglob(f"*{extension}"):
-        path.rename(root / f"{uuid4()}{extension}")
-
-    if remove:
-        shutil.rmtree(glob)
-
-
 class KaggleCompetition(Kaggle):
     def __init__(self, competition: str, data_dir: Path):
         super().__init__(competition, data_dir, "competition")
@@ -142,9 +142,7 @@ class ToysDataset(KaggleDataset):
 
     def setup(self):
 
-        move_all_sub_files_to_main(
-            self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG
-        )
+        rglob2root(self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG)
 
     def clean(self):
 
@@ -172,9 +170,7 @@ class ImageNetSketchDataset(KaggleDataset):
         super().__init__("wanghaohan/imagenetsketch", data_dir)
 
     def setup(self):
-        move_all_sub_files_to_main(
-            self.raw_data_dir, self.raw_data_dir, Extension.JPEG, False
-        )
+        rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG, False)
         pass
 
 
