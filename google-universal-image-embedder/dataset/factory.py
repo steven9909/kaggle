@@ -122,6 +122,9 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
 
+    def setup(self):
+        pass
+
 
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
@@ -180,4 +183,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_imaterialist_challenge_furniture_2018(Path("data/"))
+    DatasetFactory.get_imaterialist_fashion_2021_fgvc8(Path("data/"))
