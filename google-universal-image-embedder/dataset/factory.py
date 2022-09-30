@@ -1,19 +1,16 @@
 import json
+import shutil
 import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 from pathlib import Path
 from typing import List, Literal
 from urllib.parse import urlparse
 
 import kaggle
 import requests
-from requests import Session
-from requests.adapters import HTTPAdapter, Retry
 from rich.progress import Progress
-
-from enum import Enum
-import shutil
 
 
 class Extension(str, Enum):
@@ -134,6 +131,9 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
 
+    def setup(self):
+        pass
+
 
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
@@ -173,21 +173,19 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
     def setup(self):
 
-        image_dir = self.raw_data_dir / "images"
-
         with open(self.raw_data_dir / "train.json", "r") as f:
             download_files(
-                [image["url"][0] for image in json.load(f)["images"]], image_dir
+                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
             )
 
         with open(self.raw_data_dir / "validation.json", "r") as f:
             download_files(
-                [image["url"][0] for image in json.load(f)["images"]], image_dir
+                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
             )
 
         with open(self.raw_data_dir / "test.json", "r") as f:
             download_files(
-                [image["url"][0] for image in json.load(f)["images"]], image_dir
+                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
             )
 
     def clean(self):
@@ -195,4 +193,8 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     DatasetFactory.get_image_net_sketch_dataset(Path("data/"))
+=======
+    DatasetFactory.get_imaterialist_fashion_2021_fgvc8(Path("data/"))
+>>>>>>> 7444d70a685f9f491dd374c84d65eb4bbd8453ec
