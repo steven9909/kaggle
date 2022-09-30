@@ -1,9 +1,10 @@
 import json
-from typing import Callable, Any
+from typing import Callable
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
+import uuid
 
 import kaggle
 import requests
@@ -30,13 +31,18 @@ class DatasetFactory:
 
         return StanfordCarsDataset(data_dir)
 
+    @staticmethod
+    def get_image_net_sketch_dataset(data_dir: Path) -> "ImageNetSketchDataset":
+
+        return ImageNetSketchDataset(data_dir)
+
 
 class Kaggle:
     def __init__(
         self, url: str, data_dir: Path, api_callable: Callable[[str, Path], None]
     ):
-        self.raw_data_zip = data_dir / (url + ".zip")
-        self.raw_data_dir = data_dir / (url)
+        self.raw_data_zip = data_dir / (url.split("/")[-1] + ".zip")
+        self.raw_data_dir = data_dir / (url.split("/")[-1])
 
         if not self.raw_data_zip.exists():
             api_callable(url, path=data_dir)
@@ -53,6 +59,19 @@ class Kaggle:
 
     def setup(self):
         pass
+
+
+def move_all_sub_files_to_main(
+    sub_folder_path: Path, main_folder_path: Path, remove_subfolder_path=True
+):
+    if not sub_folder_path.is_dir():
+        return
+
+    for file in sub_folder_path.iterdir():
+        file.rename((main_folder_path / str(uuid.uuid4())).with_suffix(file.suffix))
+
+    if remove_subfolder_path:
+        sub_folder_path.rmdir()
 
 
 class KaggleCompetition(Kaggle):
@@ -73,7 +92,30 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
+
         super().__init__("stanford-cars-dataset", data_dir)
+
+    def setup(self):
+
+        move_all_sub_files_to_main(
+            self.raw_data_dir / "cars_test/cars_test", self.raw_data_dir
+        )
+        move_all_sub_files_to_main(
+            self.raw_data_dir / "cars_train/cars_train", self.raw_data_dir
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "cars_annos.mat").unlink()
+
+
+class ImageNetSketchDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("wanghaohan/imagenetsketch", data_dir)
+
+    def setup(self):
+        pass
 
 
 class IMaterialistChallengeFurniture2018(KaggleCompetition):
