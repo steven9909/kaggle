@@ -3,12 +3,40 @@ import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Literal
+from typing import List, Literal
 from urllib.parse import urlparse
 
 import kaggle
 import requests
 from rich.progress import Progress
+
+
+def download_file(url: str, dir: Path):
+
+    if not dir.exists():
+        dir.mkdir(parents=True)
+
+    with open(dir / Path(urlparse(url).path).name, "wb") as f:
+        try:
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+
+        except:
+            return
+
+        f.write(res.content)
+
+
+def download_files(urls: List[str], dir: Path):
+
+    with ThreadPoolExecutor(16) as executor, Progress() as progress:
+        tid = progress.add_task("Downloading", total=len(urls))
+
+        for url in urls:
+            executor.submit(download_file(url, dir)).add_done_callback(
+                lambda _: progress.advance(tid)
+            )
+
+        executor.shutdown(True)
 
 
 class DatasetFactory:
@@ -132,62 +160,24 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
         super().__init__("imaterialist-challenge-furniture-2018", data_dir)
 
-    def _download_file(self, url: str, dir: Path):
-
-        if not dir.exists():
-            dir.mkdir(parents=True)
-
-        with open(dir / Path(urlparse(url).path).name, "wb") as f:
-            f.write(requests.get(url, headers={"User-Agent": "Mozilla/5.0"}).content)
-
     def setup(self):
 
-        with ThreadPoolExecutor(16) as executor, Progress() as progress:
-            with open(self.raw_data_dir / "train.json", "r") as f:
-                train_dir = self.raw_data_dir / "train"
-                train_metadata = json.load(f)
-                images, annotations = (
-                    train_metadata["images"],
-                    train_metadata["annotations"],
-                )
-                train_download = progress.add_task(
-                    "Downloading Train Data", total=len(images)
-                )
-                image_to_annotation = {
-                    annotation["image_id"]: annotation["label_id"]
-                    for annotation in annotations
-                }
+        image_dir = self.raw_data_dir / "images"
 
-                for image in images:
-                    executor.submit(
-                        self._download_file,
-                        image["url"][0],
-                        train_dir / str(image_to_annotation[image["image_id"]]),
-                    ).add_done_callback(lambda _: progress.advance(train_download))
+        with open(self.raw_data_dir / "train.json", "r") as f:
+            download_files(
+                [image["url"][0] for image in json.load(f)["images"]], image_dir
+            )
 
-            with open(self.raw_data_dir / "validation.json", "r") as f:
-                valid_dir = self.raw_data_dir / "valid"
-                valid_metadata = json.load(f)
-                images, annotations = (
-                    valid_metadata["images"],
-                    valid_metadata["annotations"],
-                )
-                valid_download = progress.add_task(
-                    "Downloading Valid Data", total=len(images)
-                )
-                image_to_annotation = {
-                    annotation["image_id"]: annotation["label_id"]
-                    for annotation in annotations
-                }
+        with open(self.raw_data_dir / "validation.json", "r") as f:
+            download_files(
+                [image["url"][0] for image in json.load(f)["images"]], image_dir
+            )
 
-                for image in images:
-                    executor.submit(
-                        self._download_file,
-                        image["url"][0],
-                        valid_dir / str(image_to_annotation[image["image_id"]]),
-                    ).add_done_callback(lambda _: progress.advance(valid_download))
-
-            executor.shutdown(True)
+        with open(self.raw_data_dir / "test.json", "r") as f:
+            download_files(
+                [image["url"][0] for image in json.load(f)["images"]], image_dir
+            )
 
     def clean(self):
         pass
