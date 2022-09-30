@@ -1,19 +1,16 @@
 import json
+import shutil
 import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 from pathlib import Path
 from typing import List, Literal
 from urllib.parse import urlparse
 
 import kaggle
 import requests
-from requests import Session
-from requests.adapters import HTTPAdapter, Retry
 from rich.progress import Progress
-
-from enum import Enum
-import shutil
 
 
 class Extension(str, Enum):
