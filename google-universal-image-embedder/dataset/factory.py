@@ -160,6 +160,9 @@ class ImageNetSketchDataset(KaggleDataset):
         super().__init__("wanghaohan/imagenetsketch", data_dir)
 
     def setup(self):
+        move_all_sub_files_to_main(
+            self.raw_data_dir, self.raw_data_dir, Extension.PNG, False
+        )
         pass
 
 
@@ -192,4 +195,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_stanford_cars_dataset(Path("data/"))
+    DatasetFactory.get_image_net_sketch_dataset(Path("data/"))
