@@ -1,3 +1,4 @@
+from codecs import ignore_errors
 import json
 import shutil
 import uuid
@@ -71,6 +72,11 @@ class DatasetFactory:
 
         return ToysDataset(data_dir)
 
+    @staticmethod
+    def get_artworks_dataset(data_dir: Path) -> "ArtWorksDataset":
+
+        return ArtWorksDataset(data_dir)
+
 
 class Kaggle:
     download_cli_factory = {
@@ -138,6 +144,23 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
     def setup(self):
         pass
+
+
+class ArtWorksDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("ikarus777/best-artworks-of-all-time", data_dir)
+
+    def setup(self):
+
+        move_all_sub_files_to_main(
+            self.raw_data_dir / "resized", self.raw_data_dir, Extension.JPG
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "artists.csv").unlink()
+        shutil.rmtree(self.raw_data_dir / "images", ignore_errors=True)
 
 
 class ToysDataset(KaggleDataset):
@@ -213,4 +236,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_toys_dataset(Path("data/"))
+    DatasetFactory.get_artworks_dataset(Path("data/"))
