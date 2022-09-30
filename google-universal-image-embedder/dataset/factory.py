@@ -1,5 +1,6 @@
 from genericpath import isdir
 import json
+import os
 import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -43,7 +44,7 @@ def download_files(urls: List[str], dir: Path):
 
 
 def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = False):
-    if glob.isdir():
+    if not glob.is_dir():
         return
 
     for path in glob.rglob(f"*{extension}"):
@@ -54,6 +55,13 @@ def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = Fals
 
 
 class DatasetFactory:
+    @staticmethod
+    def get_imaterialist_fashion_2020_fgvc7(
+        data_dir: Path,
+    ) -> "IMaterialistFashion2020FGVC7":
+
+        return IMaterialistFashion2020FGVC7(data_dir)
+
     @staticmethod
     def get_imaterialist_fashion_2021_fgvc8(
         data_dir: Path,
@@ -127,13 +135,26 @@ class KaggleDataset(Kaggle):
         super().__init__(dataset, data_dir, "dataset")
 
 
+class IMaterialistFashion2020FGVC7(KaggleCompetition):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("imaterialist-fashion-2020-fgvc7", data_dir)
+
+    def setup(self):
+
+        rglob2root(self.raw_data_dir / "train", self.raw_data_dir, Extension.JPG, True)
+        rglob2root(self.raw_data_dir / "test", self.raw_data_dir, Extension.JPG, True)
+
+    def clean(self):
+
+        os.remove(self.raw_data_dir / "sample_submission.csv")
+        os.remove(self.raw_data_dir / "train.csv")
+
+
 class IMaterialistFashion2021FGVC8(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
-
-    def setup(self):
-        pass
 
 
 class ToysDataset(KaggleDataset):
@@ -201,4 +222,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_toys_dataset(Path("data/"))
+    DatasetFactory.get_imaterialist_fashion_2020_fgvc7(Path("data/"))
