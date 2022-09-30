@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from codecs import ignore_errors
-=======
 from genericpath import isdir
->>>>>>> 3a20e6ff77acc6faada82978ad5dc2b8c3811c12
 import json
 import shutil
 import zipfile
@@ -157,9 +153,7 @@ class FoodDataset(KaggleDataset):
 
     def setup(self):
 
-        move_all_sub_files_to_main(
-            self.raw_data_dir / "raw_data", self.raw_data_dir, Extension.JPG
-        )
+        rglob2root(self.raw_data_dir / "raw_data", self.raw_data_dir, Extension.JPG)
 
     def clean(self):
 
@@ -174,9 +168,7 @@ class ArtWorksDataset(KaggleDataset):
 
     def setup(self):
 
-        move_all_sub_files_to_main(
-            self.raw_data_dir / "resized", self.raw_data_dir, Extension.JPG
-        )
+        rglob2root(self.raw_data_dir / "resized", self.raw_data_dir, Extension.JPG)
 
     def clean(self):
 
