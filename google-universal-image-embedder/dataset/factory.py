@@ -10,6 +10,15 @@ import kaggle
 import requests
 from rich.progress import Progress
 
+from enum import Enum
+import shutil
+
+
+class Extension(str, Enum):
+    JPG = ".jpg"
+    JPEG = ".jpeg"
+    PNG = ".png"
+
 
 class DatasetFactory:
     @staticmethod
@@ -71,16 +80,19 @@ class Kaggle:
 
 
 def move_all_sub_files_to_main(
-    sub_folder_path: Path, main_folder_path: Path, remove_subfolder_path=True
+    sub_folder_path: Path,
+    main_folder_path: Path,
+    extension: Extension,
+    remove_subfolder_path=True,
 ):
     if not sub_folder_path.is_dir():
         return
 
-    for file in sub_folder_path.iterdir():
-        file.rename((main_folder_path / str(uuid.uuid4())).with_suffix(file.suffix))
+    for file in Path(sub_folder_path).rglob("*" + extension):
+        file.rename((main_folder_path / str(uuid.uuid4())).with_suffix(extension))
 
     if remove_subfolder_path:
-        sub_folder_path.rmdir()
+        shutil.rmtree(sub_folder_path, ignore_errors=True)
 
 
 class KaggleCompetition(Kaggle):
@@ -107,10 +119,10 @@ class StanfordCarsDataset(KaggleDataset):
     def setup(self):
 
         move_all_sub_files_to_main(
-            self.raw_data_dir / "cars_test/cars_test", self.raw_data_dir
+            self.raw_data_dir / "cars_test/", self.raw_data_dir, Extension.JPG
         )
         move_all_sub_files_to_main(
-            self.raw_data_dir / "cars_train/cars_train", self.raw_data_dir
+            self.raw_data_dir / "cars_train/", self.raw_data_dir, Extension.JPG
         )
 
     def clean(self):
@@ -194,4 +206,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_imaterialist_challenge_furniture_2018(Path("data/"))
+    DatasetFactory.get_stanford_cars_dataset(Path("data/"))
