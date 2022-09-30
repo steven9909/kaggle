@@ -77,6 +77,11 @@ class DatasetFactory:
 
         return ArtWorksDataset(data_dir)
 
+    @staticmethod
+    def get_food_dataset(data_dir: Path) -> "FoodDataset":
+
+        return FoodDataset(data_dir)
+
 
 class Kaggle:
     download_cli_factory = {
@@ -144,6 +149,23 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
 
     def setup(self):
         pass
+
+
+class FoodDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+
+        super().__init__("sainikhileshreddy/food-recognition-2022", data_dir)
+
+    def setup(self):
+
+        move_all_sub_files_to_main(
+            self.raw_data_dir / "raw_data", self.raw_data_dir, Extension.JPG
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "visualize_dataset.png").unlink()
+        shutil.rmtree(self.raw_data_dir / "hub", ignore_errors=True)
 
 
 class ArtWorksDataset(KaggleDataset):
@@ -236,4 +258,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_artworks_dataset(Path("data/"))
+    DatasetFactory.get_food_dataset(Path("data/"))
