@@ -34,6 +34,31 @@ class SimCLRLoss(nn.Module):
         )
 
 
+class BYOLLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, q1: Tensor, q2: Tensor, z1: Tensor, z2: Tensor) -> Tensor:
+        """
+        q1: batch of N augumented (t), predicted embeddings (online)
+        q2: batch of N augumented (t') predicted embeddings (online)
+        z1: batch of N augumented (t') projected embeddings (target)
+        z2: batch of N augumented (t) projected embeddings (target)
+        """
+        z1 = z1.detach()
+        z2 = z2.detach()
+
+        l_1 = torch.sum((q1 * z1), dim=-1) / (
+            torch.norm(q1, dim=1, p=2) * torch.norm(z1, dim=1, p=2)
+        )
+
+        l_2 = torch.sum((q2 * z2), dim=-1) / (
+            torch.norm(q2, dim=1, p=2) * torch.norm(z2, dim=1, p=2)
+        )
+
+        return torch.mean(2 - 2 * (l_1 + l_2))
+
+
 class VICRegLoss(nn.Module):
     def __init__(
         self,
@@ -112,6 +137,20 @@ def forward(x, y, batch_size, repr_size, sim_coeff, std_coeff, cov_coeff):
     return sim_coeff * repr_loss + std_coeff * std_loss + cov_coeff * cov_loss
 
 
+def loss_fn(x, y):
+    x = F.normalize(x, dim=-1, p=2)
+    y = F.normalize(y, dim=-1, p=2)
+    return 2 - 2 * (x * y).sum(dim=-1)
+
+
+def forward_byol(online_pred_one, online_pred_two, target_proj_two, target_proj_one):
+    loss_one = loss_fn(online_pred_one, target_proj_two.detach())
+    loss_two = loss_fn(online_pred_two, target_proj_one.detach())
+
+    loss = loss_one + loss_two
+    return loss.mean()
+
+
 if __name__ == "__main__":
     l1 = VICRegLoss(16, 1024, 25, 25, 1)
 
@@ -122,3 +161,14 @@ if __name__ == "__main__":
     print(forward(z1, z2, 16, 1024, 25, 25, 1))
 
     assert l1(z1, z2) == forward(z1, z2, 16, 1024, 25, 25, 1)
+
+    q1 = torch.randn(16, 256)
+    q2 = torch.randn(16, 256)
+
+    z1 = torch.randn(16, 256)
+    z2 = torch.randn(16, 256)
+
+    l2 = BYOLLoss()
+
+    print(l2(q1, q2, z1, z2))
+    print(forward_byol(q1, q2, z1, z2))
