@@ -66,6 +66,11 @@ class DatasetFactory:
 
         return ImageNetSketchDataset(data_dir)
 
+    @staticmethod
+    def get_toys_dataset(data_dir: Path) -> "ToysDataset":
+
+        return ToysDataset(data_dir)
+
 
 class Kaggle:
     download_cli_factory = {
@@ -135,6 +140,21 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
         pass
 
 
+class ToysDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+        super().__init__("alejopaullier/guie-toys-dataset", data_dir)
+
+    def setup(self):
+
+        move_all_sub_files_to_main(
+            self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG
+        )
+
+    def clean(self):
+
+        (self.raw_data_dir / "toys.csv").unlink()
+
+
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
 
@@ -161,7 +181,7 @@ class ImageNetSketchDataset(KaggleDataset):
 
     def setup(self):
         move_all_sub_files_to_main(
-            self.raw_data_dir, self.raw_data_dir, Extension.PNG, False
+            self.raw_data_dir, self.raw_data_dir, Extension.JPEG, False
         )
         pass
 
@@ -193,8 +213,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    DatasetFactory.get_image_net_sketch_dataset(Path("data/"))
-=======
-    DatasetFactory.get_imaterialist_fashion_2021_fgvc8(Path("data/"))
->>>>>>> 7444d70a685f9f491dd374c84d65eb4bbd8453ec
+    DatasetFactory.get_toys_dataset(Path("data/"))
