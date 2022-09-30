@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 
 import kaggle
 import requests
+from requests import Session
+from requests.adapters import HTTPAdapter, Retry
 from rich.progress import Progress
 
 
@@ -17,13 +19,7 @@ def download_file(url: str, dir: Path):
         dir.mkdir(parents=True)
 
     with open(dir / Path(urlparse(url).path).name, "wb") as f:
-        try:
-            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-
-        except:
-            return
-
-        f.write(res.content)
+        f.write(requests.get(url, headers={"User-Agent": "Mozilla/5.0"}).content)
 
 
 def download_files(urls: List[str], dir: Path):
