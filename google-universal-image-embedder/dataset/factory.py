@@ -1,8 +1,8 @@
 import json
+from typing import Callable, Any
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from shutil import copyfileobj
 from urllib.parse import urlparse
 
 import kaggle
@@ -26,14 +26,15 @@ class DatasetFactory:
         return IMaterialistChallengeFurniture2018(data_dir)
 
 
-class KaggleDataset:
-    def __init__(self, competition: str, data_dir: Path):
-
-        self.raw_data_zip = data_dir / (competition + ".zip")
-        self.raw_data_dir = data_dir / (competition)
+class Kaggle:
+    def __init__(
+        self, url: str, data_dir: Path, api_callable: Callable[[str, Path], None]
+    ):
+        self.raw_data_zip = data_dir / (url + ".zip")
+        self.raw_data_dir = data_dir / (url)
 
         if not self.raw_data_zip.exists():
-            kaggle.api.competition_download_cli(competition, path=data_dir)
+            api_callable(url, path=data_dir)
 
         if not self.raw_data_dir.exists():
             with zipfile.ZipFile(self.raw_data_zip, "r") as z:
@@ -49,13 +50,23 @@ class KaggleDataset:
         raise NotImplementedError()
 
 
-class IMaterialistFashion2021FGVC8(KaggleDataset):
+class KaggleCompetition:
+    def __init__(self, competition: str, data_dir: Path):
+        super().__init__(competition, data_dir, kaggle.api.competition_download_cli)
+
+
+class KaggleDataset:
+    def __init__(self, dataset: str, data_dir: Path):
+        super().__init__(dataset, data_dir, kaggle.api.dataset_download_cli)
+
+
+class IMaterialistFashion2021FGVC8(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
 
 
-class IMaterialistChallengeFurniture2018(KaggleDataset):
+class IMaterialistChallengeFurniture2018(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
         super().__init__("imaterialist-challenge-furniture-2018", data_dir)
