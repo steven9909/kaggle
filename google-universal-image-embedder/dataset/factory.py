@@ -1,10 +1,10 @@
 import json
-from typing import Callable, Any, Literal
+import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlparse
-import uuid
 
 import kaggle
 import requests
@@ -44,13 +44,15 @@ class Kaggle:
     }
 
     def __init__(
-        self, url: str, data_dir: Path, api: Literal["competition", "dataset"]
+        self, src: str, data_dir: Path, api: Literal["competition", "dataset"]
     ):
-        self.raw_data_zip = data_dir / (url.split("/")[-1] + ".zip")
-        self.raw_data_dir = data_dir / (url.split("/")[-1])
+
+        name = src.split("/")[-1]
+        self.raw_data_zip = data_dir / (name + ".zip")
+        self.raw_data_dir = data_dir / (name)
 
         if not self.raw_data_zip.exists():
-            self.download_cli_factory[api](url, path=data_dir)
+            self.download_cli_factory[api](src, path=data_dir)
 
         if not self.raw_data_dir.exists():
             with zipfile.ZipFile(self.raw_data_zip, "r") as z:
@@ -158,7 +160,7 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
                 for image in images:
                     executor.submit(
-                        self.download_file,
+                        self._download_file,
                         image["url"][0],
                         train_dir / str(image_to_annotation[image["image_id"]]),
                     ).add_done_callback(lambda _: progress.advance(train_download))
@@ -180,7 +182,7 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
                 for image in images:
                     executor.submit(
-                        self.download_file,
+                        self._download_file,
                         image["url"][0],
                         valid_dir / str(image_to_annotation[image["image_id"]]),
                     ).add_done_callback(lambda _: progress.advance(valid_download))
@@ -192,4 +194,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_stanford_cars_dataset(Path("data/"))
+    DatasetFactory.get_imaterialist_challenge_furniture_2018(Path("data/"))
