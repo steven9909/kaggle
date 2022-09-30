@@ -25,6 +25,11 @@ class DatasetFactory:
 
         return IMaterialistChallengeFurniture2018(data_dir)
 
+    @staticmethod
+    def get_stanford_cars_dataset(data_dir: Path) -> "StanfordCarsDataset":
+
+        return StanfordCarsDataset(data_dir)
+
 
 class Kaggle:
     def __init__(
@@ -44,18 +49,18 @@ class Kaggle:
         self.clean()
 
     def clean(self):
-        raise NotImplementedError()
+        pass
 
     def setup(self):
-        raise NotImplementedError()
+        pass
 
 
-class KaggleCompetition:
+class KaggleCompetition(Kaggle):
     def __init__(self, competition: str, data_dir: Path):
         super().__init__(competition, data_dir, kaggle.api.competition_download_cli)
 
 
-class KaggleDataset:
+class KaggleDataset(Kaggle):
     def __init__(self, dataset: str, data_dir: Path):
         super().__init__(dataset, data_dir, kaggle.api.dataset_download_cli)
 
@@ -64,6 +69,11 @@ class IMaterialistFashion2021FGVC8(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
         super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
+
+
+class StanfordCarsDataset(KaggleDataset):
+    def __init__(self, data_dir: Path):
+        super().__init__("stanford-cars-dataset", data_dir)
 
 
 class IMaterialistChallengeFurniture2018(KaggleCompetition):
@@ -132,4 +142,4 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_imaterialist_challenge_furniture_2018(Path("data/"))
+    DatasetFactory.get_stanford_cars_dataset(Path("data/"))
