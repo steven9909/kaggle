@@ -1,5 +1,5 @@
 import json
-from typing import Callable, Any
+from typing import Callable, Any, Literal
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -32,14 +32,20 @@ class DatasetFactory:
 
 
 class Kaggle:
+    download_cli_factory = {
+        "competition": kaggle.api.competition_download_cli,
+        "dataset": kaggle.api.dataset_download_cli,
+    }
+
     def __init__(
-        self, url: str, data_dir: Path, api_callable: Callable[[str, Path], None]
+        self, url: str, data_dir: Path, api: Literal["competition", "dataset"]
     ):
+
         self.raw_data_zip = data_dir / (url + ".zip")
         self.raw_data_dir = data_dir / (url)
 
         if not self.raw_data_zip.exists():
-            api_callable(url, path=data_dir)
+            self.download_cli_factory[api](url, path=data_dir)
 
         if not self.raw_data_dir.exists():
             with zipfile.ZipFile(self.raw_data_zip, "r") as z:
@@ -48,16 +54,18 @@ class Kaggle:
         self.setup()
         self.clean()
 
-    def clean(self):
-        pass
-
     def setup(self):
-        pass
+
+        raise NotImplementedError()
+
+    def clean(self):
+
+        raise NotImplementedError()
 
 
 class KaggleCompetition(Kaggle):
     def __init__(self, competition: str, data_dir: Path):
-        super().__init__(competition, data_dir, kaggle.api.competition_download_cli)
+        super().__init__(competition, data_dir, "competition")
 
 
 class KaggleDataset(Kaggle):
