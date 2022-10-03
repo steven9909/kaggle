@@ -209,7 +209,7 @@ class BYOLLightningModule(nn.Module):
 
         self.loss = BYOLLoss()
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> List[Tensor]:
         return self.byol(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
