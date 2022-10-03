@@ -218,6 +218,10 @@ class BYOLLightningModule(nn.Module):
 
         return loss
 
+    def configure_optimizers(self) -> optim.Optimizer:
+
+        return optim.Adam(self.parameters(), lr=0.0005)
+
 
 class Model(pl.LightningModule):
     def __init__(self):
