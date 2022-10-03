@@ -130,11 +130,13 @@ class Kaggle:
 
 class KaggleCompetition(Kaggle):
     def __init__(self, competition: str, data_dir: Path):
+
         super().__init__(competition, data_dir, "competition")
 
 
 class KaggleDataset(Kaggle):
     def __init__(self, dataset: str, data_dir: Path):
+
         super().__init__(dataset, data_dir, "dataset")
 
 
@@ -226,8 +228,8 @@ class ImageNetSketchDataset(KaggleDataset):
         super().__init__("wanghaohan/imagenetsketch", data_dir)
 
     def setup(self):
+
         rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG)
-        pass
 
 
 class IMaterialistChallengeFurniture2018(KaggleCompetition):
