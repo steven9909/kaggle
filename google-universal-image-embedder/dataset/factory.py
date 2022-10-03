@@ -1,4 +1,3 @@
-from genericpath import isdir
 import json
 import os
 import shutil
@@ -12,6 +11,7 @@ from uuid import uuid4
 
 import kaggle
 import requests
+from genericpath import isdir
 from rich.progress import Progress
 
 
@@ -63,13 +63,6 @@ class DatasetFactory:
         return IMaterialistFashion2020FGVC7(data_dir)
 
     @staticmethod
-    def get_imaterialist_fashion_2021_fgvc8(
-        data_dir: Path,
-    ) -> "IMaterialistFashion2021FGVC8":
-
-        return IMaterialistFashion2021FGVC8(data_dir)
-
-    @staticmethod
     def get_imaterialist_challenge_furniture_2018(
         data_dir: Path,
     ) -> "IMaterialistChallengeFurniture2018":
@@ -87,19 +80,19 @@ class DatasetFactory:
         return ImageNetSketchDataset(data_dir)
 
     @staticmethod
-    def get_toys_dataset(data_dir: Path) -> "ToysDataset":
+    def get_guie_toys_dataset(data_dir: Path) -> "GuieToysDataset":
 
-        return ToysDataset(data_dir)
-
-    @staticmethod
-    def get_artworks_dataset(data_dir: Path) -> "ArtWorksDataset":
-
-        return ArtWorksDataset(data_dir)
+        return GuieToysDataset(data_dir)
 
     @staticmethod
-    def get_food_dataset(data_dir: Path) -> "FoodDataset":
+    def get_best_artworks_of_all_time(data_dir: Path) -> "BestArtworksOfAllTime":
 
-        return FoodDataset(data_dir)
+        return BestArtworksOfAllTime(data_dir)
+
+    @staticmethod
+    def get_food_recognition_2022(data_dir: Path) -> "FoodRecognition2022":
+
+        return FoodRecognition2022(data_dir)
 
 
 class Kaggle:
@@ -161,13 +154,7 @@ class IMaterialistFashion2020FGVC7(KaggleCompetition):
         os.remove(self.raw_data_dir / "train.csv")
 
 
-class IMaterialistFashion2021FGVC8(KaggleCompetition):
-    def __init__(self, data_dir: Path):
-
-        super().__init__("imaterialist-fashion-2021-fgvc8", data_dir)
-
-
-class FoodDataset(KaggleDataset):
+class FoodRecognition2022(KaggleDataset):
     def __init__(self, data_dir: Path):
 
         super().__init__("sainikhileshreddy/food-recognition-2022", data_dir)
@@ -180,11 +167,11 @@ class FoodDataset(KaggleDataset):
 
     def clean(self):
 
-        (self.raw_data_dir / "visualize_dataset.png").unlink()
+        os.remove(self.raw_data_dir / "visualize_dataset.png")
         shutil.rmtree(self.raw_data_dir / "hub", ignore_errors=True)
 
 
-class ArtWorksDataset(KaggleDataset):
+class BestArtworksOfAllTime(KaggleDataset):
     def __init__(self, data_dir: Path):
 
         super().__init__("ikarus777/best-artworks-of-all-time", data_dir)
@@ -197,11 +184,11 @@ class ArtWorksDataset(KaggleDataset):
 
     def clean(self):
 
-        (self.raw_data_dir / "artists.csv").unlink()
+        os.remove(self.raw_data_dir / "artists.csv")
         shutil.rmtree(self.raw_data_dir / "images", ignore_errors=True)
 
 
-class ToysDataset(KaggleDataset):
+class GuieToysDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
         super().__init__("alejopaullier/guie-toys-dataset", data_dir)
 
