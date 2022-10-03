@@ -3,10 +3,24 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from sk2torch import wrap
-from torch import Tensor, cat, diag, eye, logsumexp, mean, nn, optim, roll, unsqueeze
+from copy import deepcopy
+from typing import List
+from torch import (
+    Tensor,
+    no_grad,
+    cat,
+    diag,
+    eye,
+    logsumexp,
+    mean,
+    nn,
+    optim,
+    roll,
+    unsqueeze,
+)
 from torchvision import models
 from torchvision.transforms import functional as TF
+from ssl_framework import BYOLLoss
 
 
 class Linear(nn.Module):
@@ -131,6 +145,78 @@ class _Model(nn.Module):
         x = TF.normalize(x, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
         return self.autoencoder(self.vit(x))
+
+
+class MLP(nn.Module):
+    def __init__(self, input_size, projection_size, projection_hidden_size=2048):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(input_size, projection_hidden_size),
+            nn.BatchNorm1d(projection_hidden_size),
+            nn.ReLU(),
+            nn.Linear(projection_hidden_size, projection_hidden_size),
+            nn.BatchNorm1d(projection_hidden_size),
+            nn.ReLU(),
+            nn.Linear(projection_hidden_size, projection_size),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.layers(x)
+
+
+class BYOLModel(nn.Module):
+    def __init__(self, network, encode_size, projection_size, projection_hidden_size):
+        super().__init__()
+
+        self.network = network
+        self.online_projector = MLP(
+            encode_size, projection_size, projection_hidden_size
+        )
+        self.online_predictor = MLP(
+            projection_size, projection_size, projection_hidden_size
+        )
+
+    def _get_target_projector(self) -> MLP:
+        target = deepcopy(self.online_projector)
+        for param in target.parameters():
+            param.requires_grad = False
+        return target
+
+    def forward(self, x: Tensor) -> List[Tensor]:
+        online_proj_1 = self.online_projector(self.network(x[0]))
+        online_proj_2 = self.online_projector(self.network(x[1]))
+
+        online_pred_1 = self.online_predictor(online_proj_1)
+        online_pred_2 = self.online_predictor(online_proj_2)
+
+        with no_grad():
+            target_projector = self._get_target_projector()
+            target_proj_1 = target_projector(self.network(x[0])).detach()
+            target_proj_2 = target_projector(self.network(x[1])).detach()
+
+        return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
+
+
+class BYOLLightningModule(nn.Module):
+    def __init__(
+        self, network, encode_size, projection_size=64, projection_hidden_size=2048
+    ):
+        super().__init__()
+
+        self.byol = BYOLModel(
+            network, encode_size, projection_size, projection_hidden_size
+        )
+
+        self.loss = BYOLLoss()
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.byol(x)
+
+    def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
+        out = self.forward(batch)
+        loss = self.loss(*out)
+
+        return loss
 
 
 class Model(pl.LightningModule):
