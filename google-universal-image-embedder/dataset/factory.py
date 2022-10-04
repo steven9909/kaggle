@@ -5,13 +5,12 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
-from typing import List, Literal
+from typing import Iterator, List, Literal
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import kaggle
 import requests
-from genericpath import isdir
 from rich.progress import Progress
 
 
@@ -118,6 +117,10 @@ class Kaggle:
 
         self.setup()
         self.clean()
+
+    def iter_samples(self, extension: Extension) -> Iterator[Path]:
+
+        return self.raw_data_dir.glob(f"*{extension}")
 
     def setup(self):
 
