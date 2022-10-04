@@ -148,7 +148,7 @@ class _Model(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size, projection_size, projection_hidden_size=2048):
+    def __init__(self, input_size, projection_size, projection_hidden_size):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_size, projection_hidden_size),
@@ -164,35 +164,65 @@ class MLP(nn.Module):
         return self.layers(x)
 
 
-class BYOLModel(nn.Module):
-    def __init__(self, network, encode_size, projection_size, projection_hidden_size):
+class BYOLEncoder(nn.Module):
+    def __init__(self, network, input_size, projection_size, projection_hidden_size):
         super().__init__()
 
         self.network = network
-        self.online_projector = MLP(
-            encode_size, projection_size, projection_hidden_size
+        self.projector = MLP(input_size, projection_size, projection_hidden_size)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.projector(self.network(x))
+
+
+class BYOLModel(nn.Module):
+    def __init__(
+        self,
+        network,
+        encode_size,
+        projection_size,
+        projection_hidden_size,
+        target_decay_rate=0.996,
+    ):
+        super().__init__()
+
+        self.network = network
+        self.online_encoder = BYOLEncoder(
+            network, encode_size, projection_size, projection_hidden_size
         )
         self.online_predictor = MLP(
             projection_size, projection_size, projection_hidden_size
         )
 
-    def _get_target_projector(self) -> MLP:
-        target = deepcopy(self.online_projector)
+        self.target_decay_rate = target_decay_rate
+
+        self.target_encoder = self._get_target_encoder()
+
+    def _get_target_encoder(self) -> MLP:
+        target = deepcopy(self.online_encoder)
         for param in target.parameters():
             param.requires_grad = False
         return target
 
+    def update_target_encoder(self):
+        for target_param, online_param in zip(
+            self.target_encoder.parameters(), self.online_encoder.parameters()
+        ):
+            target_param.data = (
+                target_param.data * self.target_decay_rate
+                + (1 - self.target_decay_rate) * online_param.data
+            )
+
     def forward(self, x: Tensor) -> List[Tensor]:
-        online_proj_1 = self.online_projector(self.network(x[0]))
-        online_proj_2 = self.online_projector(self.network(x[1]))
+        online_proj_1 = self.online_encoder(x[0])
+        online_proj_2 = self.online_encoder(x[1])
 
         online_pred_1 = self.online_predictor(online_proj_1)
         online_pred_2 = self.online_predictor(online_proj_2)
 
         with no_grad():
-            target_projector = self._get_target_projector()
-            target_proj_1 = target_projector(self.network(x[0])).detach()
-            target_proj_2 = target_projector(self.network(x[1])).detach()
+            target_proj_1 = self.target_encoder(x[0])
+            target_proj_2 = self.target_encoder(x[1])
 
         return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
 
@@ -218,9 +248,12 @@ class BYOLLightningModule(nn.Module):
 
         return loss
 
+    def on_before_zero_grad(self, _):
+        self.byol.update_target_encoder()
+
     def configure_optimizers(self) -> optim.Optimizer:
 
-        return optim.Adam(self.parameters(), lr=0.0005)
+        return optim.Adam(self.parameters(), lr=3e-4)
 
 
 class Model(pl.LightningModule):
