@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+from tkinter import ALL
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
@@ -19,6 +20,19 @@ class Extension(str, Enum):
     JPG = ".jpg"
     JPEG = ".jpeg"
     PNG = ".png"
+
+
+class DatasetType(Enum):
+    OTHER = 0
+    APPAREL = 1
+    ARTWORK = 2
+    DISHES = 3
+    STOREFRONTS = 4
+    LANDMARKS = 5
+    TOYS = 6
+    PACKAGED_GOODS = 7
+    FURNITURE = 8
+    ALL = 9
 
 
 def download_file(url: str, dir: Path):
@@ -55,44 +69,53 @@ def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = Fals
 
 
 class DatasetFactory:
-    @staticmethod
+    def __init__(self, data_dir: Path):
+        self.data_dir = data_dir
+
     def get_imaterialist_fashion_2020_fgvc7(
-        data_dir: Path,
+        self,
     ) -> "IMaterialistFashion2020FGVC7":
 
-        return IMaterialistFashion2020FGVC7(data_dir)
+        return IMaterialistFashion2020FGVC7(self.data_dir)
 
-    @staticmethod
     def get_imaterialist_challenge_furniture_2018(
-        data_dir: Path,
+        self,
     ) -> "IMaterialistChallengeFurniture2018":
 
-        return IMaterialistChallengeFurniture2018(data_dir)
+        return IMaterialistChallengeFurniture2018(self.data_dir)
 
-    @staticmethod
-    def get_stanford_cars_dataset(data_dir: Path) -> "StanfordCarsDataset":
+    def get_stanford_cars_dataset(self) -> "StanfordCarsDataset":
 
-        return StanfordCarsDataset(data_dir)
+        return StanfordCarsDataset(self.data_dir)
 
-    @staticmethod
-    def get_image_net_sketch_dataset(data_dir: Path) -> "ImageNetSketchDataset":
+    def get_image_net_sketch_dataset(self) -> "ImageNetSketchDataset":
 
-        return ImageNetSketchDataset(data_dir)
+        return ImageNetSketchDataset(self.data_dir)
 
-    @staticmethod
-    def get_guie_toys_dataset(data_dir: Path) -> "GuieToysDataset":
+    def get_guie_toys_dataset(self) -> "GuieToysDataset":
 
-        return GuieToysDataset(data_dir)
+        return GuieToysDataset(self.data_dir)
 
-    @staticmethod
-    def get_best_artworks_of_all_time(data_dir: Path) -> "BestArtworksOfAllTime":
+    def get_best_artworks_of_all_time(self) -> "BestArtworksOfAllTime":
 
-        return BestArtworksOfAllTime(data_dir)
+        return BestArtworksOfAllTime(self.data_dir)
 
-    @staticmethod
-    def get_food_recognition_2022(data_dir: Path) -> "FoodRecognition2022":
+    def get_food_recognition_2022(self) -> "FoodRecognition2022":
 
-        return FoodRecognition2022(data_dir)
+        return FoodRecognition2022(self.data_dir)
+
+    def get_dataset_func(self, type: DatasetType):
+        if type == DatasetType.ALL:
+            return [
+                self.get_imaterialist_fashion_2020_fgvc7,
+                self.get_stanford_cars_dataset,
+                self.get_image_net_sketch_dataset,
+                self.get_guie_toys_dataset,
+                self.get_best_artworks_of_all_time,
+                self.get_food_recognition_2022,
+            ]
+        else:
+            raise NotImplementedError
 
 
 class Kaggle:
@@ -117,7 +140,10 @@ class Kaggle:
                 z.extractall(self.raw_data_dir)
 
         self.setup()
-        self.clean()
+        try:
+            self.clean()
+        except OSError:
+            pass
 
     def setup(self):
 
@@ -231,6 +257,10 @@ class ImageNetSketchDataset(KaggleDataset):
 
         rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG)
 
+    def clean(self):
+
+        pass
+
 
 class IMaterialistChallengeFurniture2018(KaggleCompetition):
     def __init__(self, data_dir: Path):
@@ -255,6 +285,7 @@ class IMaterialistChallengeFurniture2018(KaggleCompetition):
             )
 
     def clean(self):
+
         pass
 
 
