@@ -56,12 +56,12 @@ def download_files(urls: List[str], dir: Path):
         executor.shutdown(True)
 
 
-def rglob2root(glob: Path, root: Path, extension: Extension, remove: bool = False):
+def rglob2root(glob: Path, root: Path, extensions: Extension, remove: bool = False):
     if not glob.is_dir():
         return
 
-    for path in glob.rglob(f"*{extension}"):
-        path.rename(root / f"{uuid4()}{extension}")
+    for path in glob.rglob(f"*{extensions}"):
+        path.rename(root / f"{uuid4()}{extensions}")
 
     if remove:
         shutil.rmtree(glob)
@@ -144,9 +144,11 @@ class Kaggle:
         except OSError:
             pass
 
-    def iter_samples(self, extension: Extension) -> Iterator[Path]:
+    def iter_samples(self, extensions: Extension) -> Iterator[Path]:
 
-        return self.raw_data_dir.glob(f"*{extension}")
+        return self.raw_data_dir.glob(
+            "|".join([f"*{extension}" for extension in extensions])
+        )
 
     def setup(self):
 

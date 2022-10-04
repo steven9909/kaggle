@@ -1,29 +1,25 @@
-from concurrent.futures import Future, ThreadPoolExecutor
-from pathlib import Path
+from itertools import chain
 from typing import Callable, List, Optional, Tuple
-from uuid import uuid4
 
-import numpy as np
 import pytorch_lightning as pl
 from PIL import Image
-from torch import Tensor, from_numpy
+from torch import Tensor
 from torch.utils import data
 from torchvision import transforms as T
 
 from dataset.factory import Extension, Kaggle
-from itertools import chain
 
 
 class Contrastive(data.Dataset):
     def __init__(
         self,
         kaggles: List[Kaggle],
-        extension: Extension,
+        extensions: List[Extension],
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
 
         self.samples = list(
-            chain([kaggle.iter_samples(extension) for kaggle in kaggles])
+            chain([kaggle.iter_samples(extensions) for kaggle in kaggles])
         )
         self.transform = T.ToTensor() if transform is None else transform
 
@@ -45,14 +41,14 @@ class BYOLDataModule(pl.LightningDataModule):
     def __init__(
         self,
         kaggles: List[Kaggle],
-        extension: Extension,
+        extensions: List[Extension],
         batch_size: int = 64,
         num_workers: int = 0,
     ):
 
         super().__init__()
         self.kaggles = kaggles
-        self.extension = extension
+        self.extensions = extensions
         self.batch_size = batch_size
         self.num_workers = num_workers
 
@@ -72,7 +68,7 @@ class BYOLDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str):
 
-        dataset = Contrastive(self.kaggles, self.extension, self.transform)
+        dataset = Contrastive(self.kaggles, self.extensions, self.transform)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))
