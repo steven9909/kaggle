@@ -2,7 +2,7 @@ from itertools import chain
 from typing import Callable, List, Optional, Tuple
 
 import pytorch_lightning as pl
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from torch import Tensor
 from torch.utils import data
 from torchvision import transforms as T
@@ -24,13 +24,15 @@ class Contrastive(data.Dataset):
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-
-        image = Image.open(self.samples[index]).convert("RGB")
-
-        return (
-            self.transform(image),
-            self.transform(image),
-        )
+        try:
+            with Image.open(self.samples[index]) as img:
+                img.convert("RGB")
+                return (
+                    self.transform(img),
+                    self.transform(img),
+                )
+        except UnidentifiedImageError:
+            return None
 
     def __len__(self) -> int:
 
