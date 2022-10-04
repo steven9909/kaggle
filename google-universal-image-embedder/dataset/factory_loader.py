@@ -76,15 +76,24 @@ class BYOLDataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return data.DataLoader(
-            self.datasets[0], batch_size=self.batch_size, num_workers=self.num_workers
+            self.datasets[0],
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            persistent_workers=True,
         )
 
     def val_dataloader(self):
         return data.DataLoader(
-            self.datasets[1], batch_size=self.batch_size, num_workers=self.num_workers
+            self.datasets[1],
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            persistent_workers=True,
         )
 
     def test_dataloader(self):
         return data.DataLoader(
-            self.datasets[2], batch_size=self.batch_size, num_workers=self.num_workers
+            self.datasets[2],
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            persistent_workers=True,
         )

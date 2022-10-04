@@ -224,8 +224,8 @@ class BYOLModel(nn.Module):
         online_pred_2 = self.online_predictor(online_proj_2)
 
         with no_grad():
-            target_proj_1 = self.target_encoder(x[1]).detach()
-            target_proj_2 = self.target_encoder(x[0]).detach()
+            target_proj_1 = self.target_encoder(x[1])
+            target_proj_2 = self.target_encoder(x[0])
 
         return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
 
