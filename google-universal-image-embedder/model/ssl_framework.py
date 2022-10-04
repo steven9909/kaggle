@@ -38,7 +38,7 @@ class BYOLLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def l(q: Tensor, z: Tensor) -> Tensor:
+    def l(self, q: Tensor, z: Tensor) -> Tensor:
 
         return 2 - 2 * torch.sum(q * z, dim=1) / (
             torch.norm(q, 2, dim=1) * torch.norm(z, 2, dim=1)
