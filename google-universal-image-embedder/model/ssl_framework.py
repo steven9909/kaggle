@@ -56,7 +56,7 @@ class BYOLLoss(nn.Module):
             torch.norm(q2, dim=1, p=2) * torch.norm(z2, dim=1, p=2)
         )
 
-        return torch.mean(2 - 2 * (l_1 + l_2))
+        return 2 - 2 * torch.mean((l_1 + l_2))
 
 
 class VICRegLoss(nn.Module):
