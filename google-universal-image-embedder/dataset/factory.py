@@ -1,10 +1,10 @@
 import json
 import os
 import shutil
-from tkinter import ALL
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 from typing import Iterator, List, Literal
 from urllib.parse import urlparse
@@ -112,12 +112,10 @@ class Kaggle:
             except OSError:
                 pass
 
-    def iter_samples(self, extensions: Extension) -> List[Path]:
+    def iter_samples(self, extensions: Extension) -> Iterator[Path]:
 
-        return list(
-            self.raw_data_dir.glob(
-                "|".join([f"*{extension}" for extension in extensions])
-            )
+        return chain(
+            *[self.raw_data_dir.glob(f"*{extension}") for extension in extensions]
         )
 
     def setup(self):
