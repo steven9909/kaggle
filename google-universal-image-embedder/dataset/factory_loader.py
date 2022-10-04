@@ -6,6 +6,9 @@ from PIL import Image, UnidentifiedImageError
 from torch import Tensor
 from torch.utils import data
 from torchvision import transforms as T
+from torch.utils.data.dataloader import default_collate
+
+import numpy as np
 
 from dataset.factory import Extension, Kaggle
 
@@ -24,15 +27,18 @@ class Contrastive(data.Dataset):
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        try:
-            with Image.open(self.samples[index]) as img:
-                img = img.convert("RGB")
-                return (
-                    self.transform(img),
-                    self.transform(img),
-                )
-        except UnidentifiedImageError:
-            return None
+        try_index = index
+        while True:
+            try:
+                with Image.open(self.samples[try_index]) as img:
+                    img = img.convert("RGB")
+                    return (
+                        self.transform(img),
+                        self.transform(img),
+                    )
+            except UnidentifiedImageError:
+                try_index = np.random.randint(0, len(self.samples))
+                continue
 
     def __len__(self) -> int:
 
