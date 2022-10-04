@@ -26,7 +26,7 @@ class Contrastive(data.Dataset):
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         try:
             with Image.open(self.samples[index]) as img:
-                img.convert("RGB")
+                img = img.convert("RGB")
                 return (
                     self.transform(img),
                     self.transform(img),
