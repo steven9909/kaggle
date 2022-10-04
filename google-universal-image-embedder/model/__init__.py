@@ -3,10 +3,24 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from sk2torch import wrap
-from torch import Tensor, cat, diag, eye, logsumexp, mean, nn, optim, roll, unsqueeze
+from copy import deepcopy
+from typing import List
+from torch import (
+    Tensor,
+    no_grad,
+    cat,
+    diag,
+    eye,
+    logsumexp,
+    mean,
+    nn,
+    optim,
+    roll,
+    unsqueeze,
+)
 from torchvision import models
 from torchvision.transforms import functional as TF
+from ssl_framework import BYOLLoss
 
 
 class Linear(nn.Module):
@@ -131,6 +145,118 @@ class _Model(nn.Module):
         x = TF.normalize(x, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
         return self.autoencoder(self.vit(x))
+
+
+class MLP(nn.Module):
+    def __init__(self, input_size, projection_size, projection_hidden_size):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(input_size, projection_hidden_size),
+            nn.BatchNorm1d(projection_hidden_size),
+            nn.ReLU(),
+            nn.Linear(projection_hidden_size, projection_hidden_size),
+            nn.BatchNorm1d(projection_hidden_size),
+            nn.ReLU(),
+            nn.Linear(projection_hidden_size, projection_size),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.layers(x)
+
+
+class BYOLEncoder(nn.Module):
+    def __init__(self, network, input_size, projection_size, projection_hidden_size):
+        super().__init__()
+
+        self.network = network
+        self.projector = MLP(input_size, projection_size, projection_hidden_size)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.projector(self.network(x))
+
+
+class BYOLModel(nn.Module):
+    def __init__(
+        self,
+        network,
+        encode_size,
+        projection_size,
+        projection_hidden_size,
+        target_decay_rate=0.996,
+    ):
+        super().__init__()
+
+        self.network = network
+        self.online_encoder = BYOLEncoder(
+            network, encode_size, projection_size, projection_hidden_size
+        )
+        self.online_predictor = MLP(
+            projection_size, projection_size, projection_hidden_size
+        )
+
+        self.target_decay_rate = target_decay_rate
+
+        self.target_encoder = self._get_target_encoder()
+
+    def _get_target_encoder(self) -> MLP:
+        target = deepcopy(self.online_encoder)
+        for param in target.parameters():
+            param.requires_grad = False
+        return target
+
+    def update_target_encoder(self):
+        for target_param, online_param in zip(
+            self.target_encoder.parameters(), self.online_encoder.parameters()
+        ):
+            target_param.data = (
+                target_param.data * self.target_decay_rate
+                + (1 - self.target_decay_rate) * online_param.data
+            )
+
+    def forward(self, x: Tensor):
+        if not self.training:
+            return self.online_encoder(x)
+
+        online_proj_1 = self.online_encoder(x[0])
+        online_proj_2 = self.online_encoder(x[1])
+
+        online_pred_1 = self.online_predictor(online_proj_1)
+        online_pred_2 = self.online_predictor(online_proj_2)
+
+        with no_grad():
+            target_proj_1 = self.target_encoder(x[0])
+            target_proj_2 = self.target_encoder(x[1])
+
+        return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
+
+
+class BYOLLightningModule(nn.Module):
+    def __init__(
+        self, network, encode_size, projection_size=64, projection_hidden_size=2048
+    ):
+        super().__init__()
+
+        self.byol = BYOLModel(
+            network, encode_size, projection_size, projection_hidden_size
+        )
+
+        self.loss = BYOLLoss()
+
+    def forward(self, x: Tensor):
+        return self.byol(x)
+
+    def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
+        out = self.forward(batch)
+        loss = self.loss(*out)
+
+        return loss
+
+    def on_before_zero_grad(self, _):
+        self.byol.update_target_encoder()
+
+    def configure_optimizers(self) -> optim.Optimizer:
+
+        return optim.Adam(self.parameters(), lr=3e-4)
 
 
 class Model(pl.LightningModule):
