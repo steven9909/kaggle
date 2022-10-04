@@ -21,6 +21,7 @@ class Contrastive(data.Dataset):
         self.samples = list(
             chain([kaggle.iter_samples(extensions) for kaggle in kaggles])
         )
+        print(len(self.samples))
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
