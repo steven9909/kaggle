@@ -20,7 +20,7 @@ from torch import (
 )
 from torchvision import models
 from torchvision.transforms import functional as TF
-from ssl_framework import BYOLLoss
+from model.ssl_framework import BYOLLoss
 
 
 class Linear(nn.Module):
@@ -230,7 +230,7 @@ class BYOLModel(nn.Module):
         return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
 
 
-class BYOLLightningModule(nn.Module):
+class BYOLLightningModule(pl.LightningModule):
     def __init__(
         self, network, encode_size, projection_size=64, projection_hidden_size=2048
     ):

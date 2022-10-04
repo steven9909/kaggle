@@ -71,47 +71,15 @@ class DatasetFactory:
     def __init__(self, data_dir: Path):
         self.data_dir = data_dir
 
-    def get_imaterialist_fashion_2020_fgvc7(
-        self,
-    ) -> "IMaterialistFashion2020FGVC7":
-
-        return IMaterialistFashion2020FGVC7(self.data_dir)
-
-    def get_imaterialist_challenge_furniture_2018(
-        self,
-    ) -> "IMaterialistChallengeFurniture2018":
-
-        return IMaterialistChallengeFurniture2018(self.data_dir)
-
-    def get_stanford_cars_dataset(self) -> "StanfordCarsDataset":
-
-        return StanfordCarsDataset(self.data_dir)
-
-    def get_image_net_sketch_dataset(self) -> "ImageNetSketchDataset":
-
-        return ImageNetSketchDataset(self.data_dir)
-
-    def get_guie_toys_dataset(self) -> "GuieToysDataset":
-
-        return GuieToysDataset(self.data_dir)
-
-    def get_best_artworks_of_all_time(self) -> "BestArtworksOfAllTime":
-
-        return BestArtworksOfAllTime(self.data_dir)
-
-    def get_food_recognition_2022(self) -> "FoodRecognition2022":
-
-        return FoodRecognition2022(self.data_dir)
-
-    def get_dataset_func(self, type: DatasetType):
+    def get_kaggles_dataset(self, type: DatasetType):
         if type == DatasetType.ALL:
             return [
-                self.get_imaterialist_fashion_2020_fgvc7,
-                self.get_stanford_cars_dataset,
-                self.get_image_net_sketch_dataset,
-                self.get_guie_toys_dataset,
-                self.get_best_artworks_of_all_time,
-                self.get_food_recognition_2022,
+                IMaterialistFashion2020FGVC7(self.data_dir),
+                StanfordCarsDataset(self.data_dir),
+                ImageNetSketchDataset(self.data_dir),
+                GuieToysDataset(self.data_dir),
+                BestArtworksOfAllTime(self.data_dir),
+                FoodRecognition2022(self.data_dir),
             ]
         else:
             raise NotImplementedError
@@ -138,11 +106,11 @@ class Kaggle:
             with zipfile.ZipFile(self.raw_data_zip, "r") as z:
                 z.extractall(self.raw_data_dir)
 
-        self.setup()
-        try:
-            self.clean()
-        except OSError:
-            pass
+            self.setup()
+            try:
+                self.clean()
+            except OSError:
+                pass
 
     def iter_samples(self, extensions: Extension) -> List[Path]:
 
