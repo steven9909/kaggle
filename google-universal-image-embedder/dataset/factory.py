@@ -144,10 +144,12 @@ class Kaggle:
         except OSError:
             pass
 
-    def iter_samples(self, extensions: Extension) -> Iterator[Path]:
+    def iter_samples(self, extensions: Extension) -> List[Path]:
 
-        return self.raw_data_dir.glob(
-            "|".join([f"*{extension}" for extension in extensions])
+        return list(
+            self.raw_data_dir.glob(
+                "|".join([f"*{extension}" for extension in extensions])
+            )
         )
 
     def setup(self):
