@@ -22,7 +22,10 @@ def main(config: DictConfig):
 
     kaggles = DatasetFactory(Path(config.data_dir)).get_kaggles_dataset(DatasetType.ALL)
     data_module = BYOLDataModule(
-        kaggles, [Extension.JPEG, Extension.JPG], batch_size=16, num_workers=10
+        kaggles,
+        [Extension.JPEG, Extension.JPG],
+        batch_size=config.batch_size,
+        num_workers=5,
     )
 
     ckpt_path = Path(config.checkpoint_dir)
