@@ -55,10 +55,10 @@ class BYOLDataModule(pl.LightningDataModule):
         self.transform = T.Compose(
             [
                 T.ToTensor(),
-                T.RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p=0.3),
+                T.RandomApply([T.ColorJitter(0.8, 0.8, 0.8, 0.2)], p=0.3),
                 T.RandomGrayscale(p=0.2),
                 T.RandomHorizontalFlip(),
-                T.RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p=0.2),
+                T.RandomApply([T.GaussianBlur((3, 3), (1.0, 2.0))], p=0.2),
                 T.RandomResizedCrop((224, 224)),
                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
