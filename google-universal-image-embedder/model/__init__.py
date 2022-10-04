@@ -213,7 +213,10 @@ class BYOLModel(nn.Module):
                 + (1 - self.target_decay_rate) * online_param.data
             )
 
-    def forward(self, x: Tensor) -> List[Tensor]:
+    def forward(self, x: Tensor):
+        if not self.training:
+            return self.online_encoder(x)
+
         online_proj_1 = self.online_encoder(x[0])
         online_proj_2 = self.online_encoder(x[1])
 
@@ -239,7 +242,7 @@ class BYOLLightningModule(nn.Module):
 
         self.loss = BYOLLoss()
 
-    def forward(self, x: Tensor) -> List[Tensor]:
+    def forward(self, x: Tensor):
         return self.byol(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
