@@ -20,7 +20,7 @@ from torch import (
 )
 from torchvision import models
 from torchvision.transforms import functional as TF
-from model.ssl_framework import BYOLLoss
+from model.contrastive_losses import BYOLLoss
 
 
 class Linear(nn.Module):
@@ -224,10 +224,10 @@ class BYOLModel(nn.Module):
         online_pred_2 = self.online_predictor(online_proj_2)
 
         with no_grad():
-            target_proj_1 = self.target_encoder(x[1])
-            target_proj_2 = self.target_encoder(x[0])
+            target_proj_1 = self.target_encoder(x[0])
+            target_proj_2 = self.target_encoder(x[1])
 
-        return [online_pred_1, online_pred_2, target_proj_1, target_proj_2]
+        return [online_pred_1, online_pred_2, target_proj_2, target_proj_1]
 
 
 class BYOLLightningModule(pl.LightningModule):
@@ -236,14 +236,14 @@ class BYOLLightningModule(pl.LightningModule):
     ):
         super().__init__()
 
-        self.byol = BYOLModel(
+        self.model = BYOLModel(
             network, encode_size, projection_size, projection_hidden_size
         )
 
         self.loss = BYOLLoss()
 
     def forward(self, x: Tensor):
-        return self.byol(x)
+        return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
         out = self.forward(batch)
@@ -252,7 +252,7 @@ class BYOLLightningModule(pl.LightningModule):
         return loss
 
     def on_before_zero_grad(self, _):
-        self.byol.update_target_encoder()
+        self.model.update_target_encoder()
 
     def configure_optimizers(self) -> optim.Optimizer:
 
