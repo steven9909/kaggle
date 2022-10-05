@@ -1,4 +1,4 @@
-from itertools import chain, islice
+from itertools import chain, islice, cycle
 from typing import Callable, List, Optional, Tuple, Iterable
 
 import pytorch_lightning as pl
@@ -21,7 +21,7 @@ class Contrastive(data.Dataset):
         n: Optional[int],
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
-        self.samples = [kaggle.iter_samples() for kaggle in kaggles]
+        self.samples = [cycle(kaggle.iter_samples()) for kaggle in kaggles]
         assert len(self.samples) >= 1, "List of kaggle objects cannot be empty"
 
         if not n:

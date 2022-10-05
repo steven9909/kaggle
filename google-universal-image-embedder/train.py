@@ -23,7 +23,7 @@ def main(config: DictConfig):
 
     kaggles = DatasetFactory(Path(config.data_dir)).get_kaggles(Category.ALL)
     data_module = BYOLDataModule(
-        kaggles, batch_size=config.batch_size, num_workers=10, n=500
+        kaggles, batch_size=config.batch_size, num_workers=10, n=1000
     )
 
     ckpt_path = Path(config.checkpoint_dir)
