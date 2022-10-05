@@ -1,25 +1,15 @@
 import pickle
+from copy import deepcopy
 from pathlib import Path
+from typing import Tuple, Union
+from pyparsing import Optional
 
 import pytorch_lightning as pl
 import torch.nn.functional as F
-from copy import deepcopy
-from typing import List
-from torch import (
-    Tensor,
-    no_grad,
-    cat,
-    diag,
-    eye,
-    logsumexp,
-    mean,
-    nn,
-    optim,
-    roll,
-    unsqueeze,
-)
+from torch import Tensor, jit, nn, no_grad, optim
 from torchvision import models
 from torchvision.transforms import functional as TF
+
 from model.contrastive_losses import BYOLLoss
 
 
@@ -214,21 +204,30 @@ class BYOLModel(nn.Module):
                 + (1 - self.target_decay_rate) * online_param.data
             )
 
-    def forward(self, x: Tensor):
-        if not self.training:
-            return self.online_encoder(x)
+    @jit.unused
+    def forward_training(
+        self, x1: Tensor, x2: Tensor
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
 
-        online_proj_1 = self.online_encoder(x[0])
-        online_proj_2 = self.online_encoder(x[1])
+        online_proj_1 = self.online_encoder(x1)
+        online_proj_2 = self.online_encoder(x2)
 
         online_pred_1 = self.online_predictor(online_proj_1)
         online_pred_2 = self.online_predictor(online_proj_2)
 
         with no_grad():
-            target_proj_1 = self.target_encoder(x[0])
-            target_proj_2 = self.target_encoder(x[1])
+            target_proj_1 = self.target_encoder(x1)
+            target_proj_2 = self.target_encoder(x2)
 
-        return [online_pred_1, online_pred_2, target_proj_2, target_proj_1]
+        return online_pred_1, online_pred_2, target_proj_2, target_proj_1
+
+    def forward(self, x: Tensor) -> Tensor:
+
+        x = TF.resize(x, [224, 224])
+        x = x / 255
+        x = TF.normalize(x, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+        return self.online_encoder(x)
 
 
 class BYOLLightningModule(pl.LightningModule):
@@ -243,14 +242,13 @@ class BYOLLightningModule(pl.LightningModule):
 
         self.loss = BYOLLoss()
 
-    def forward(self, x: Tensor):
+    def forward(self, x: Tensor) -> Tensor:
+
         return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Tensor:
-        out = self.forward(batch)
-        loss = self.loss(*out)
 
-        return loss
+        return self.loss(*self.model.forward_training(*batch))
 
     def on_before_zero_grad(self, _):
         self.model.update_target_encoder()
