@@ -41,7 +41,7 @@ class BYOLLoss(nn.Module):
     def l(self, q: Tensor, z: Tensor) -> Tensor:
 
         return 2 - 2 * torch.sum(q * z, dim=1) / (
-            torch.norm(q, 2, dim=1) * torch.norm(z, 2, dim=1)
+            torch.norm(q, p=2, dim=1) * torch.norm(z, p=2, dim=1)
         )
 
     def forward(self, q1: Tensor, q2: Tensor, z1: Tensor, z2: Tensor) -> Tensor:
@@ -106,3 +106,5 @@ class VICRegLoss(nn.Module):
         cov = self._covariance(z1, z2)
 
         return self.vicreg_lambda * inv + self.vicreg_mu * var + self.vicreg_nu * cov
+
+if __name__ == "__main__":

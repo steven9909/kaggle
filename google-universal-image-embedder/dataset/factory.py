@@ -1,27 +1,17 @@
-import json
-import os
-import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from itertools import chain
 from pathlib import Path
 from typing import Iterator, List, Literal
 from urllib.parse import urlparse
-from uuid import uuid4
 
 import kaggle
 import requests
+from PIL import Image, UnidentifiedImageError
 from rich.progress import Progress
 
 
-class Extension(str, Enum):
-    JPG = ".jpg"
-    JPEG = ".jpeg"
-    PNG = ".png"
-
-
-class DatasetType(Enum):
+class Category(Enum):
     OTHER = 0
     APPAREL = 1
     ARTWORK = 2
@@ -49,218 +39,122 @@ def download_files(urls: List[str], dir: Path):
         tid = progress.add_task("Downloading", total=len(urls))
 
         for url in urls:
-            executor.submit(download_file(url, dir)).add_done_callback(
-                lambda _: progress.advance(tid)
-            )
+            future = executor.submit(download_file(url, dir))
+            future.add_done_callback(lambda _: progress.advance(tid))
 
         executor.shutdown(True)
 
 
-def rglob2root(glob: Path, root: Path, extensions: Extension, remove: bool = False):
-    if not glob.is_dir():
-        return
+def iter_images(data_dir: Path) -> Iterator[Path]:
 
-    for path in glob.rglob(f"*{extensions}"):
-        path.rename(root / f"{uuid4()}{extensions}")
+    for path in data_dir.rglob("*"):
+        if path.is_file():
+            try:
+                Image.open(path).verify()
 
-    if remove:
-        shutil.rmtree(glob)
+                yield path
+
+            except UnidentifiedImageError:
+                continue
 
 
 class DatasetFactory:
     def __init__(self, data_dir: Path):
         self.data_dir = data_dir
 
-    def get_kaggles_dataset(self, type: DatasetType):
-        if type == DatasetType.ALL:
+    def get_kaggles(self, type: Category):
+        if type == Category.ALL:
             return [
-                IMaterialistFashion2020FGVC7(self.data_dir),
-                StanfordCarsDataset(self.data_dir),
-                ImageNetSketchDataset(self.data_dir),
+                # IMaterialistFashion2020FGVC7(self.data_dir),
+                # StanfordCarsDataset(self.data_dir),
+                # ImageNetSketchDataset(self.data_dir),
                 GuieToysDataset(self.data_dir),
-                BestArtworksOfAllTime(self.data_dir),
-                FoodRecognition2022(self.data_dir),
+                # BestArtworksOfAllTime(self.data_dir),
+                # FoodRecognition2022(self.data_dir),
             ]
         else:
             raise NotImplementedError
 
 
 class Kaggle:
-    download_cli_factory = {
+    _download_cli_factory = {
         "competition": kaggle.api.competition_download_cli,
         "dataset": kaggle.api.dataset_download_cli,
     }
 
+    data_zip: Path
+    data_dir: Path
+    samples: List[Path]
+
     def __init__(
-        self, src: str, data_dir: Path, api: Literal["competition", "dataset"]
+        self, data_dir: Path, src: str, api: Literal["competition", "dataset"]
     ):
 
         name = src.split("/")[-1]
-        self.raw_data_zip = data_dir / (name + ".zip")
-        self.raw_data_dir = data_dir / (name)
+        self.data_dir = data_dir / name
+        self.data_zip = self.data_dir.with_suffix(".zip")
 
-        if not self.raw_data_zip.exists():
-            self.download_cli_factory[api](src, path=data_dir)
+        if not self.data_zip.exists():
+            self._download_cli_factory[api](src, path=data_dir)
 
-        if not self.raw_data_dir.exists():
-            with zipfile.ZipFile(self.raw_data_zip, "r") as z:
-                z.extractall(self.raw_data_dir)
+        if not self.data_dir.exists():
+            with zipfile.ZipFile(self.data_zip, "r") as z:
+                z.extractall(self.data_dir)
 
-            self.setup()
-            try:
-                self.clean()
-            except OSError:
-                pass
+    def iter_samples(self) -> Iterator[Path]:
 
-    def iter_samples(self, extensions: Extension) -> Iterator[Path]:
-
-        return chain(
-            *[self.raw_data_dir.glob(f"*{extension}") for extension in extensions]
-        )
-
-    def setup(self):
-
-        raise NotImplementedError()
-
-    def clean(self):
-
-        raise NotImplementedError()
+        return iter_images(self.data_dir)
 
 
 class KaggleCompetition(Kaggle):
-    def __init__(self, competition: str, data_dir: Path):
+    def __init__(self, data_dir: Path, competition: str):
 
-        super().__init__(competition, data_dir, "competition")
+        super().__init__(data_dir, competition, "competition")
 
 
 class KaggleDataset(Kaggle):
-    def __init__(self, dataset: str, data_dir: Path):
+    def __init__(self, data_dir: Path, dataset: str):
 
-        super().__init__(dataset, data_dir, "dataset")
+        super().__init__(data_dir, dataset, "dataset")
 
 
 class IMaterialistFashion2020FGVC7(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
-        super().__init__("imaterialist-fashion-2020-fgvc7", data_dir)
-
-    def setup(self):
-
-        rglob2root(self.raw_data_dir / "train", self.raw_data_dir, Extension.JPG, True)
-        rglob2root(self.raw_data_dir / "test", self.raw_data_dir, Extension.JPG, True)
-
-    def clean(self):
-
-        os.remove(self.raw_data_dir / "sample_submission.csv")
-        os.remove(self.raw_data_dir / "train.csv")
+        super().__init__(data_dir, "imaterialist-fashion-2020-fgvc7")
 
 
 class FoodRecognition2022(KaggleDataset):
     def __init__(self, data_dir: Path):
 
-        super().__init__("sainikhileshreddy/food-recognition-2022", data_dir)
-
-    def setup(self):
-
-        rglob2root(
-            self.raw_data_dir / "raw_data", self.raw_data_dir, Extension.JPG, True
-        )
-
-    def clean(self):
-
-        os.remove(self.raw_data_dir / "visualize_dataset.png")
-        shutil.rmtree(self.raw_data_dir / "hub", ignore_errors=True)
+        super().__init__(data_dir, "sainikhileshreddy/food-recognition-2022")
 
 
 class BestArtworksOfAllTime(KaggleDataset):
     def __init__(self, data_dir: Path):
 
-        super().__init__("ikarus777/best-artworks-of-all-time", data_dir)
-
-    def setup(self):
-
-        rglob2root(
-            self.raw_data_dir / "resized", self.raw_data_dir, Extension.JPG, True
-        )
-
-    def clean(self):
-
-        os.remove(self.raw_data_dir / "artists.csv")
-        shutil.rmtree(self.raw_data_dir / "images", ignore_errors=True)
+        super().__init__(data_dir, "ikarus777/best-artworks-of-all-time")
 
 
 class GuieToysDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
-        super().__init__("alejopaullier/guie-toys-dataset", data_dir)
-
-    def setup(self):
-
-        rglob2root(self.raw_data_dir / "toys", self.raw_data_dir, Extension.JPG, True)
-
-    def clean(self):
-
-        (self.raw_data_dir / "toys.csv").unlink()
+        super().__init__(data_dir, "alejopaullier/guie-toys-dataset")
 
 
 class StanfordCarsDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
 
-        super().__init__("jessicali9530/stanford-cars-dataset", data_dir)
-
-    def setup(self):
-
-        rglob2root(
-            self.raw_data_dir / "cars_test/", self.raw_data_dir, Extension.JPG, True
-        )
-        rglob2root(
-            self.raw_data_dir / "cars_train/", self.raw_data_dir, Extension.JPG, True
-        )
-
-    def clean(self):
-
-        (self.raw_data_dir / "cars_annos.mat").unlink()
+        super().__init__(data_dir, "jessicali9530/stanford-cars-dataset")
 
 
 class ImageNetSketchDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
 
-        super().__init__("wanghaohan/imagenetsketch", data_dir)
-
-    def setup(self):
-
-        rglob2root(self.raw_data_dir, self.raw_data_dir, Extension.JPEG)
-
-    def clean(self):
-
-        pass
-
-
-class IMaterialistChallengeFurniture2018(KaggleCompetition):
-    def __init__(self, data_dir: Path):
-
-        super().__init__("imaterialist-challenge-furniture-2018", data_dir)
-
-    def setup(self):
-
-        with open(self.raw_data_dir / "train.json", "r") as f:
-            download_files(
-                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
-            )
-
-        with open(self.raw_data_dir / "validation.json", "r") as f:
-            download_files(
-                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
-            )
-
-        with open(self.raw_data_dir / "test.json", "r") as f:
-            download_files(
-                [image["url"][0] for image in json.load(f)["images"]], self.raw_data_dir
-            )
-
-    def clean(self):
-
-        pass
+        super().__init__(data_dir, "wanghaohan/imagenetsketch")
 
 
 if __name__ == "__main__":
-    DatasetFactory.get_imaterialist_fashion_2020_fgvc7(Path("data/"))
+    kaggles = DatasetFactory(Path("data/")).get_kaggles(Category.ALL)
+
+    for path in kaggles[0].iter_samples():
+        print(path)
