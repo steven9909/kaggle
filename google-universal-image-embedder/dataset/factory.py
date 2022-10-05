@@ -50,9 +50,8 @@ def iter_images(data_dir: Path) -> Iterator[Path]:
     for path in data_dir.rglob("*"):
         if path.is_file():
             try:
-                Image.open(path)
-
-                yield path
+                with Image.open(path):
+                    yield path
 
             except UnidentifiedImageError:
                 continue
@@ -80,24 +79,19 @@ class DatasetFactory:
 
 
 class Kaggle:
-    data_zip: Path
-    data_dir: Path
-    samples: List[Path]
-
     def __init__(
-        self, data_dir: Path, src: str, api: Literal["competition", "dataset"]
+        self, data_dir: Path, name: str, api: Literal["competition", "dataset"]
     ):
 
-        name = src.split("/").pop()
-        self.data_dir = data_dir / name
+        self.data_dir = data_dir / name.split("/").pop()
         self.data_zip = self.data_dir.with_suffix(".zip")
 
         if not self.data_zip.exists():
             if api == "competition":
-                kaggle.api.competition_download_cli(src, path=data_dir)
+                kaggle.api.competition_download_cli(name, path=data_dir)
 
             elif api == "dataset":
-                kaggle.api.dataset_download_cli(src, path=data_dir)
+                kaggle.api.dataset_download_cli(name, path=data_dir)
 
             else:
                 raise ValueError(f"unsupported api {api}")
@@ -162,10 +156,3 @@ class FurnitureIdentificationDataset(KaggleCompetition):
     def __init__(self, data_dir: Path):
 
         super().__init__(data_dir, "day-3-kaggle-competition")
-
-
-if __name__ == "__main__":
-    kaggles = DatasetFactory(Path("data/")).get_kaggles(Category.ALL)
-
-    for path in kaggles[0].iter_samples():
-        print(path)
