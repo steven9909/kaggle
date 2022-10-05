@@ -1,16 +1,19 @@
-from itertools import chain
-from typing import Callable, List, Optional, Tuple
+from itertools import chain, islice
+from typing import Callable, List, Optional, Tuple, Iterable
 
 import pytorch_lightning as pl
 from PIL import Image, UnidentifiedImageError
 from torch import Tensor
 from torch.utils import data
 from torchvision import transforms as T
-from torch.utils.data.dataloader import default_collate
 
 import numpy as np
 
 from dataset.factory import Extension, Kaggle
+
+
+def _get_length_of_iterable(iterable: Iterable):
+    return sum(1 for _ in iterable)
 
 
 class Contrastive(data.Dataset):
@@ -18,12 +21,18 @@ class Contrastive(data.Dataset):
         self,
         kaggles: List[Kaggle],
         extensions: List[Extension],
+        n: Optional[int] = None,
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
+        self.samples = [kaggle.iter_samples(extensions) for kaggle in kaggles]
+        assert len(self.samples >= 1), "List of kaggle objects cannot be empty"
 
-        self.samples = list(
-            chain(*[kaggle.iter_samples(extensions) for kaggle in kaggles])
-        )
+        if not n:
+            n = _get_length_of_iterable(self.samples[0])
+            for sample in self.samples[1:]:
+                n = min(n, _get_length_of_iterable(sample))
+
+        self.samples = chain(*[islice(sample, n) for sample in self.samples])
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
@@ -72,7 +81,7 @@ class BYOLDataModule(pl.LightningDataModule):
             ]
         )
 
-    def setup(self, stage: str):
+    def setup(self, _: str):
 
         dataset = Contrastive(self.kaggles, self.extensions, self.transform)
 
