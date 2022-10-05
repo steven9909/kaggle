@@ -38,7 +38,7 @@ class BYOLLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def l(q: Tensor, z: Tensor) -> Tensor:
+    def l(self, q: Tensor, z: Tensor) -> Tensor:
 
         return 2 - 2 * torch.sum(q * z, dim=1) / (
             torch.norm(q, 2, dim=1) * torch.norm(z, 2, dim=1)
@@ -106,3 +106,65 @@ class VICRegLoss(nn.Module):
         cov = self._covariance(z1, z2)
 
         return self.vicreg_lambda * inv + self.vicreg_mu * var + self.vicreg_nu * cov
+
+
+def off_diagonal(x):
+    n, m = x.shape
+    assert n == m
+    return x.flatten()[:-1].view(n - 1, n + 1)[:, 1:].flatten()
+
+
+def forward(x, y, batch_size, repr_size, sim_coeff, std_coeff, cov_coeff):
+    repr_loss = F.mse_loss(x, y)
+
+    x = x - x.mean(dim=0)
+    y = y - y.mean(dim=0)
+
+    std_x = torch.sqrt(x.var(dim=0) + 0.0001)
+    std_y = torch.sqrt(y.var(dim=0) + 0.0001)
+    std_loss = torch.mean(F.relu(1 - std_x)) / 2 + torch.mean(F.relu(1 - std_y)) / 2
+
+    cov_x = (x.T @ x) / (batch_size - 1)
+    cov_y = (y.T @ y) / (batch_size - 1)
+    cov_loss = 0
+    cov_loss += off_diagonal(cov_x).pow_(2).sum().div(repr_size)
+    cov_loss += off_diagonal(cov_y).pow_(2).sum().div(repr_size)
+
+    return sim_coeff * repr_loss + std_coeff * std_loss + cov_coeff * cov_loss
+
+
+def loss_fn(x, y):
+    x = F.normalize(x, dim=-1, p=2)
+    y = F.normalize(y, dim=-1, p=2)
+    return 2 - 2 * (x * y).sum(dim=-1)
+
+
+def forward_byol(online_pred_one, online_pred_two, target_proj_two, target_proj_one):
+    loss_one = loss_fn(online_pred_one, target_proj_two.detach())
+    loss_two = loss_fn(online_pred_two, target_proj_one.detach())
+
+    loss = loss_one + loss_two
+    return loss.mean()
+
+
+if __name__ == "__main__":
+    l1 = VICRegLoss(16, 1024, 25, 25, 1)
+
+    z1 = torch.randn(16, 1024)
+    z2 = torch.randn(16, 1024)
+
+    print(l1(z1, z2))
+    print(forward(z1, z2, 16, 1024, 25, 25, 1))
+
+    # assert l1(z1, z2) == forward(z1, z2, 16, 1024, 25, 25, 1)
+
+    q1 = torch.randn(16, 256)
+    q2 = torch.randn(16, 256)
+
+    z1 = torch.randn(16, 256)
+    z2 = torch.randn(16, 256)
+
+    l2 = BYOLLoss()
+
+    print(l2(q1, q2, z1, z2))
+    print(forward_byol(q1, q2, z1, z2))
