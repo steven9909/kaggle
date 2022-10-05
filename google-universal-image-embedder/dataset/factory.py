@@ -50,7 +50,7 @@ def iter_images(data_dir: Path) -> Iterator[Path]:
     for path in data_dir.rglob("*"):
         if path.is_file():
             try:
-                Image.open(path).verify()
+                Image.open(path)
 
                 yield path
 
@@ -63,6 +63,7 @@ class DatasetFactory:
         self.data_dir = data_dir
 
     def get_kaggles(self, type: Category):
+
         if type == Category.ALL:
             return [
                 IMaterialistFashion2020FGVC7(self.data_dir),
@@ -72,16 +73,12 @@ class DatasetFactory:
                 BestArtworksOfAllTime(self.data_dir),
                 FoodRecognition2022(self.data_dir),
             ]
+
         else:
             raise NotImplementedError
 
 
 class Kaggle:
-    _download_cli_factory = {
-        "competition": kaggle.api.competition_download_cli,
-        "dataset": kaggle.api.dataset_download_cli,
-    }
-
     data_zip: Path
     data_dir: Path
     samples: List[Path]
@@ -95,7 +92,14 @@ class Kaggle:
         self.data_zip = self.data_dir.with_suffix(".zip")
 
         if not self.data_zip.exists():
-            self._download_cli_factory[api](src, path=data_dir)
+            if api == "competition":
+                kaggle.api.competition_download_cli(src, path=data_dir)
+
+            elif api == "dataset":
+                kaggle.api.dataset_download_cli(src, path=data_dir)
+
+            else:
+                raise ValueError(f"unsupported api {api}")
 
         if not self.data_dir.exists():
             with zipfile.ZipFile(self.data_zip, "r") as z:
