@@ -87,7 +87,7 @@ class Kaggle:
         self, data_dir: Path, src: str, api: Literal["competition", "dataset"]
     ):
 
-        name = src.split("/")[-1]
+        name = src.split("/").pop()
         self.data_dir = data_dir / name
         self.data_zip = self.data_dir.with_suffix(".zip")
 
