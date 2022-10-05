@@ -106,5 +106,3 @@ class VICRegLoss(nn.Module):
         cov = self._covariance(z1, z2)
 
         return self.vicreg_lambda * inv + self.vicreg_mu * var + self.vicreg_nu * cov
-
-if __name__ == "__main__":

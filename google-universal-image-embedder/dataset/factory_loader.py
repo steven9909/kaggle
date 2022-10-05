@@ -2,14 +2,12 @@ from itertools import chain, islice
 from typing import Callable, List, Optional, Tuple, Iterable
 
 import pytorch_lightning as pl
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 from torch import Tensor
 from torch.utils import data
 from torchvision import transforms as T
 
-import numpy as np
-
-from dataset.factory import Extension, Kaggle
+from dataset.factory import Kaggle
 
 
 def _get_length_of_iterable(iterable: Iterable):
@@ -20,19 +18,19 @@ class Contrastive(data.Dataset):
     def __init__(
         self,
         kaggles: List[Kaggle],
-        extensions: List[Extension],
-        n: Optional[int] = None,
+        n: Optional[int],
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
-        self.samples = [kaggle.iter_samples(extensions) for kaggle in kaggles]
-        assert len(self.samples >= 1), "List of kaggle objects cannot be empty"
+        self.samples = [kaggle.iter_samples() for kaggle in kaggles]
+        assert len(self.samples) >= 1, "List of kaggle objects cannot be empty"
 
         if not n:
             n = _get_length_of_iterable(self.samples[0])
             for sample in self.samples[1:]:
                 n = min(n, _get_length_of_iterable(sample))
 
-        self.samples = chain(*[islice(sample, n) for sample in self.samples])
+        self.samples = list(chain(*[islice(sample, n) for sample in self.samples]))
+
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
@@ -52,16 +50,16 @@ class BYOLDataModule(pl.LightningDataModule):
     def __init__(
         self,
         kaggles: List[Kaggle],
-        extensions: List[Extension],
         batch_size: int = 64,
         num_workers: int = 0,
+        n: Optional[int] = None,
     ):
 
         super().__init__()
         self.kaggles = kaggles
-        self.extensions = extensions
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.n = n
 
         self.transform = T.Compose(
             [
@@ -75,9 +73,9 @@ class BYOLDataModule(pl.LightningDataModule):
             ]
         )
 
-    def setup(self, _: str):
+    def setup(self, stage: str):
 
-        dataset = Contrastive(self.kaggles, self.extensions, self.transform)
+        dataset = Contrastive(kaggles=self.kaggles, transform=self.transform, n=self.n)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))

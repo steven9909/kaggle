@@ -1,18 +1,19 @@
-import os
 from pathlib import Path
 
 import hydra
-import pytorch_lightning as pl
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from dataset.factory_loader import BYOLDataModule
-from dataset.factory import DatasetFactory, DatasetType, Extension
-from model import BYOLLightningModule
+from dataset.factory import Category, DatasetFactory
 
 from torchvision.models import convnext_base, ConvNeXt_Base_Weights
 
+from model import BYOLLightningModule
+
 from torch.nn import Identity
+
+import pytorch_lightning as pl
 
 from torch import Tensor, randn
 
@@ -20,12 +21,9 @@ from torch import Tensor, randn
 @hydra.main(".", "config.yaml", None)
 def main(config: DictConfig):
 
-    kaggles = DatasetFactory(Path(config.data_dir)).get_kaggles_dataset(DatasetType.ALL)
+    kaggles = DatasetFactory(Path(config.data_dir)).get_kaggles(Category.ALL)
     data_module = BYOLDataModule(
-        kaggles,
-        [Extension.JPEG, Extension.JPG],
-        batch_size=config.batch_size,
-        num_workers=5,
+        kaggles, batch_size=config.batch_size, num_workers=10, n=500
     )
 
     ckpt_path = Path(config.checkpoint_dir)
@@ -49,7 +47,7 @@ def main(config: DictConfig):
 
     repr_model.classifier[2] = Identity()
 
-    model = BYOLLightningModule(repr_model, 1024)
+    model = BYOLLightningModule(repr_model, 1024, 64, 2048)
     trainer = pl.Trainer(
         max_epochs=500, accelerator="gpu", devices=1, callbacks=[checkpoint]
     )
