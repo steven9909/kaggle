@@ -10,10 +10,6 @@ from torchvision import transforms as T
 from dataset.factory import Kaggle
 
 
-def _get_length_of_iterable(iterable: Iterable):
-    return sum(1 for _ in iterable)
-
-
 class Contrastive(data.Dataset):
     def __init__(
         self,
@@ -68,7 +64,7 @@ class BYOLDataModule(pl.LightningDataModule):
             ]
         )
 
-    def setup(self, _: str):
+    def setup(self, stage: str):
 
         dataset = Contrastive(kaggles=self.kaggles, n=self.n, transform=self.transform)
 

@@ -23,7 +23,7 @@ def main(config: DictConfig):
 
     kaggles = DatasetFactory(Path(config.data_dir)).get_kaggles(Category.ALL)
     data_module = BYOLDataModule(
-        kaggles, batch_size=config.batch_size, num_workers=10, n=1000
+        kaggles, batch_size=config.batch_size, num_workers=10, n=20000
     )
 
     ckpt_path = Path(config.checkpoint_dir)
@@ -47,7 +47,7 @@ def main(config: DictConfig):
 
     repr_model.classifier[2] = Identity()
 
-    model = BYOLLightningModule(repr_model, 1024, 64, 2048)
+    model = BYOLLightningModule(repr_model, 1024, 64, 4096)
     trainer = pl.Trainer(
         max_epochs=500, accelerator="gpu", devices=1, callbacks=[checkpoint]
     )

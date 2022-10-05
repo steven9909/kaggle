@@ -151,13 +151,14 @@ class MLP(nn.Module):
     def __init__(self, input_size, projection_size, projection_hidden_size):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.Linear(input_size, projection_hidden_size),
+            nn.Linear(input_size, projection_hidden_size, bias=False),
             nn.BatchNorm1d(projection_hidden_size),
-            nn.ReLU(),
-            nn.Linear(projection_hidden_size, projection_hidden_size),
+            nn.GELU(),
+            nn.Linear(projection_hidden_size, projection_hidden_size, bias=False),
             nn.BatchNorm1d(projection_hidden_size),
-            nn.ReLU(),
-            nn.Linear(projection_hidden_size, projection_size),
+            nn.GELU(),
+            nn.Linear(projection_hidden_size, projection_size, bias=False),
+            nn.BatchNorm1d(projection_size, affine=False),
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -256,7 +257,7 @@ class BYOLLightningModule(pl.LightningModule):
 
     def configure_optimizers(self) -> optim.Optimizer:
 
-        return optim.Adam(self.parameters(), lr=3e-4)
+        return optim.Adam(self.parameters(), lr=5e-4)
 
 
 class Model(pl.LightningModule):
