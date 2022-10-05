@@ -66,12 +66,12 @@ class DatasetFactory:
 
         if type == Category.ALL:
             return [
-                # IMaterialistFashion2020FGVC7(self.data_dir),
-                # StanfordCarsDataset(self.data_dir),
-                # ImageNetSketchDataset(self.data_dir),
+                IMaterialistFashion2020FGVC7(self.data_dir),
+                StanfordCarsDataset(self.data_dir),
+                ImageNetSketchDataset(self.data_dir),
                 GuieToysDataset(self.data_dir),
-                # BestArtworksOfAllTime(self.data_dir),
-                # FoodRecognition2022(self.data_dir),
+                BestArtworksOfAllTime(self.data_dir),
+                FoodRecognition2022(self.data_dir),
             ]
 
         else:
