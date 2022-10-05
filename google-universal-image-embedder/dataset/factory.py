@@ -72,6 +72,7 @@ class DatasetFactory:
                 GuieToysDataset(self.data_dir),
                 BestArtworksOfAllTime(self.data_dir),
                 FoodRecognition2022(self.data_dir),
+                FurnitureIdentificationDataset(self.data_dir),
             ]
 
         else:
@@ -155,6 +156,12 @@ class ImageNetSketchDataset(KaggleDataset):
     def __init__(self, data_dir: Path):
 
         super().__init__(data_dir, "wanghaohan/imagenetsketch")
+
+
+class FurnitureIdentificationDataset(KaggleCompetition):
+    def __init__(self, data_dir: Path):
+
+        super().__init__(data_dir, "day-3-kaggle-competition")
 
 
 if __name__ == "__main__":
