@@ -18,19 +18,15 @@ class Contrastive(data.Dataset):
     def __init__(
         self,
         kaggles: List[Kaggle],
-        n: Optional[int],
+        n: int,
         transform: Optional[Callable[[Image.Image], Tensor]] = None,
     ):
-        self.samples = [cycle(kaggle.iter_samples()) for kaggle in kaggles]
-        assert len(self.samples) >= 1, "List of kaggle objects cannot be empty"
 
-        if not n:
-            n = _get_length_of_iterable(self.samples[0])
-            for sample in self.samples[1:]:
-                n = min(n, _get_length_of_iterable(sample))
+        assert len(kaggles) > 0, "expected a list of kaggle objects"
 
-        self.samples = list(chain(*[islice(sample, n) for sample in self.samples]))
-
+        self.samples = list(
+            chain(*[islice(cycle(kaggle.iter_samples()), n) for kaggle in kaggles])
+        )
         self.transform = T.ToTensor() if transform is None else transform
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
@@ -50,17 +46,16 @@ class BYOLDataModule(pl.LightningDataModule):
     def __init__(
         self,
         kaggles: List[Kaggle],
+        n: int,
         batch_size: int = 64,
         num_workers: int = 0,
-        n: Optional[int] = None,
     ):
 
         super().__init__()
         self.kaggles = kaggles
+        self.n = n
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.n = n
-
         self.transform = T.Compose(
             [
                 T.ToTensor(),
@@ -73,9 +68,9 @@ class BYOLDataModule(pl.LightningDataModule):
             ]
         )
 
-    def setup(self, stage: str):
+    def setup(self, _: str):
 
-        dataset = Contrastive(kaggles=self.kaggles, transform=self.transform, n=self.n)
+        dataset = Contrastive(kaggles=self.kaggles, n=self.n, transform=self.transform)
 
         fit_len = int(0.8 * len(dataset))
         val_len = int(0.1 * len(dataset))
@@ -85,24 +80,15 @@ class BYOLDataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return data.DataLoader(
-            self.datasets[0],
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            persistent_workers=True,
+            self.datasets[0], batch_size=self.batch_size, num_workers=self.num_workers
         )
 
     def val_dataloader(self):
         return data.DataLoader(
-            self.datasets[1],
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            persistent_workers=True,
+            self.datasets[1], batch_size=self.batch_size, num_workers=self.num_workers
         )
 
     def test_dataloader(self):
         return data.DataLoader(
-            self.datasets[2],
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            persistent_workers=True,
+            self.datasets[2], batch_size=self.batch_size, num_workers=self.num_workers
         )
